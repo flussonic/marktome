@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 // NodeData - структура для хранения данных узла Markdown
@@ -161,7 +162,26 @@ func Convert(n ast.Node, source []byte) NodeData {
 }
 
 func Parse(source []byte) NodeData {
+	blockParsers := []util.PrioritizedValue{
+		util.Prioritized(parser.NewSetextHeadingParser(), 100),
+		util.Prioritized(parser.NewThematicBreakParser(), 200),
+		util.Prioritized(parser.NewListParser(), 300),
+		util.Prioritized(parser.NewListItemParser(), 400),
+		util.Prioritized(parser.NewCodeBlockParser(), 500),
+		util.Prioritized(parser.NewATXHeadingParser(), 600),
+		util.Prioritized(parser.NewFencedCodeBlockParser(), 700),
+		util.Prioritized(parser.NewBlockquoteParser(), 800),
+		util.Prioritized(NewHTMLBlockParser(), 900),
+		util.Prioritized(parser.NewParagraphParser(), 1000),
+	}
+	p := parser.NewParser(parser.WithBlockParsers(blockParsers...),
+		parser.WithInlineParsers(parser.DefaultInlineParsers()...),
+		parser.WithParagraphTransformers(parser.DefaultParagraphTransformers()...),
+	)
+	p.AddOptions(parser.WithAttribute())
+
 	md := goldmark.New(
+		goldmark.WithParser(p),
 		goldmark.WithExtensions(
 			extension.GFM,
 			meta.New(meta.WithStoresInDocument()),
@@ -175,6 +195,7 @@ func Parse(source []byte) NodeData {
 		),
 	)
 	reader := text.NewReader(source)
+	// fmt.Println("conf:", md.Parser().Config)
 	document := md.Parser().Parse(reader)
 	root := Convert(document, source)
 	return root
