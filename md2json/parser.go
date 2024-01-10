@@ -17,10 +17,12 @@ const (
 	HTML       Kind = "HTML"
 	Snippet    Kind = "Snippet"
 	Heading    Kind = "Heading"
+	Link       Kind = "Link"
 	List       Kind = "List"
 	ListItem   Kind = "ListItem"
 	Admonition Kind = "Admonition"
 	Code       Kind = "Code"
+	CodeFence  Kind = "CodeFence"
 	Bold       Kind = "Bold"
 	Emphasis   Kind = "Emphasis"
 )
@@ -60,6 +62,14 @@ func parseDocument(st *ParserState) Node {
 			continue
 		}
 
+		// skip comment
+		if st.startsWith("<!--") {
+			closing := "-->"
+			i := bytes.Index(st.source, []byte(closing))
+			st.consumeN(i + len(closing))
+			continue
+		}
+
 		if st.startsWith("<snippet ") {
 			node.Children = append(node.Children, parseSnippet(st))
 			continue
@@ -71,12 +81,22 @@ func parseDocument(st *ParserState) Node {
 		}
 
 		if st.startsWith("* ") {
-			node.Children = append(node.Children, parseList(st))
+			node.Children = append(node.Children, parseList(st, []byte{'*', ' '}))
+			continue
+		}
+
+		if st.startsWith("- ") {
+			node.Children = append(node.Children, parseList(st, []byte{'-', ' '}))
 			continue
 		}
 
 		if st.startsWith("!!! ") {
 			node.Children = append(node.Children, parseAdmonition(st))
+			continue
+		}
+
+		if st.startsWith("```") {
+			node.Children = append(node.Children, parseCodeFence(st))
 			continue
 		}
 
@@ -155,18 +175,22 @@ func (st *InlineParserState) parseHtml() {
 	if !st.startsWith([]byte{'<'}) {
 		return
 	}
+	// fmt.Printf("Reading html from %d '%s'\n", st.pos, string(st.source))
 	st.flushText()
 	st.consumeN(1)
-	nameEnd := bytes.Index(st.source, []byte{' '})
+	tagEnd := bytes.Index(st.source, []byte{'>'})
+	if tagEnd < 0 {
+		panic(fmt.Sprintf("No closing tag for '%s'", string(st.source)))
+	}
+	nameEnd := bytes.Index(st.source[:tagEnd], []byte{' '})
 	if nameEnd < 0 {
-		st.flushText()
-		return
+		nameEnd = tagEnd
 	}
 	tagName := st.consumeN(nameEnd)
 	attrs := map[string]string{}
 	attrs["tag"] = string(tagName)
 
-	tagEnd := bytes.Index(st.source, []byte{'>'})
+	tagEnd = bytes.Index(st.source, []byte{'>'})
 	if tagEnd < 0 {
 		return
 	}
@@ -196,27 +220,49 @@ func (st *InlineParserState) parseHtml() {
 	st.children = append(st.children, node)
 }
 
-func (st *InlineParserState) parseImage() {
-	if !st.startsWith([]byte{'!', '['}) {
-		return
+func (st *InlineParserState) readLink() (Node, bool) {
+	if !st.startsWith([]byte{'['}) {
+		return Node{}, false
 	}
-	st.consumeN(2)
+	st.consumeN(1)
 	titleEnd := bytes.Index(st.source, []byte{']', '('})
 	if titleEnd < 0 {
-		return
+		return Node{}, false
 	}
 	title := string(st.consumeN(titleEnd))
 	st.consumeN(2)
 	urlEnd := bytes.Index(st.source, []byte{')'})
 	if urlEnd < 0 {
-		return
+		return Node{}, false
 	}
 	url := string(st.consumeN(urlEnd))
 	st.consumeN(1)
 	node := Node{
-		Type:       Image,
+		Type:       Link,
 		Attributes: map[string]string{"title": title, "src": url},
 	}
+	return node, true
+}
+
+func (st *InlineParserState) parseLink() {
+	node, ok := st.readLink()
+	if !ok {
+		return
+	}
+	node.Type = Link
+	st.children = append(st.children, node)
+}
+
+func (st *InlineParserState) parseImage() {
+	if !st.startsWith([]byte{'!'}) {
+		return
+	}
+	st.consumeN(1)
+	node, ok := st.readLink()
+	if !ok {
+		return
+	}
+	node.Type = Image
 	st.children = append(st.children, node)
 }
 
@@ -230,6 +276,7 @@ func parseText(source []byte) []Node {
 		st.parseInliner([]byte{'`'}, Code)
 		st.parseInliner([]byte{'*', '*'}, Bold)
 		st.parseInliner([]byte{'*'}, Emphasis)
+		st.parseLink()
 		st.parseImage()
 		st.parseHtml()
 	}
@@ -259,6 +306,29 @@ func parseSnippet(st *ParserState) Node {
 		if k != "tag" {
 			node.Attributes[k] = v
 		}
+	}
+	return node
+}
+
+func parseCodeFence(st *ParserState) Node {
+	st.consumeN(len("```"))
+	language := st.consumeLine()
+	s1 := st.source
+	for !st.eof() {
+		line := st.consumeLine()
+		if bytes.Index(line, []byte{'`', '`', '`'}) >= 0 {
+			break
+		}
+	}
+	l := len(s1) - len(st.source)
+	block := s1[:l]
+	node := Node{
+		Type:       CodeFence,
+		Attributes: map[string]string{},
+		Literal:    string(block),
+	}
+	if len(language) > 0 {
+		node.Attributes["lang"] = string(language)
 	}
 	return node
 }
@@ -307,13 +377,13 @@ func parseHeading(st *ParserState) Node {
 	return node
 }
 
-func parseList(st *ParserState) Node {
+func parseList(st *ParserState, symbol []byte) Node {
 	node := Node{
 		Type:       List,
 		Attributes: map[string]string{},
 		Children:   []Node{},
 	}
-	for !st.eof() && st.startsWith("* ") {
+	for !st.eof() && st.startsWith(string(symbol)) {
 		st.consumeN(2)
 		line := st.consumeLine()
 		text := parseText(line)
@@ -322,6 +392,10 @@ func parseList(st *ParserState) Node {
 			Children: text,
 		}
 		node.Children = append(node.Children, li)
+		// Обрабатываем лишний перенос строк между элементами списка
+		if st.startsWith("\n" + string(symbol)) {
+			st.consumeN(1)
+		}
 	}
 	return node
 }
@@ -329,6 +403,8 @@ func parseList(st *ParserState) Node {
 func parseAdmonition(st *ParserState) Node {
 	st.consumeN(len("!!! "))
 	level := string(st.consumeLine())
+	for ; st.startsWith(" "); st.consumeN(1) {
+	}
 	child := parseParagraph(st)
 	node := Node{
 		Type:       Admonition,
@@ -347,22 +423,10 @@ func (st *ParserState) eof() bool {
 }
 
 func (st *ParserState) startsWith(s string) bool {
-	return st.head(len(s)) == s
-}
-
-func (st *ParserState) head(counts ...int) string {
-	count := 1
-	if len(counts) > 0 {
-		count = counts[0]
+	if len(s) >= len(st.source) {
+		return false
 	}
-	if count > len(st.source) {
-		count = len(st.source)
-	}
-	h := st.source[:count]
-	if h[len(h)-1] == '\r' {
-		h = append(h[0:len(h)-1], '\n')
-	}
-	return string(h)
+	return bytes.Equal([]byte(s), st.source[:len(s)])
 }
 
 func (st *ParserState) consumeLine() []byte {
