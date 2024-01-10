@@ -23,24 +23,34 @@ func parseDocument(st *ParserState) NodeData {
 	}
 
 	for !st.eof() {
-		for !st.eof() && st.head() == "\n" {
+		for !st.eof() && st.startsWith("\n") {
 			st.consumeLine()
 		}
 		if st.eof() {
 			break
 		}
 
-		if st.head(4) == "---\n" {
+		if st.startsWith("---\n") {
 			parseMeta(&node, st)
 			continue
 		}
 
-		if st.head() == "#" {
+		if st.startsWith("<snippet ") {
+			node.Children = append(node.Children, parseSnippet(st))
+			continue
+		}
+
+		if st.startsWith("#") {
 			node.Children = append(node.Children, parseHeading(st))
 			continue
 		}
 
-		child := parseBlock(st)
+		if st.startsWith("* ") {
+			node.Children = append(node.Children, parseList(st))
+			continue
+		}
+
+		child := parseParagraph(st)
 		node.Children = append(node.Children, child)
 	}
 	// switch source[pos] {
@@ -50,15 +60,43 @@ func parseDocument(st *ParserState) NodeData {
 	return node
 }
 
-func parseBlock(st *ParserState) NodeData {
+func parseParagraph(st *ParserState) NodeData {
 	begin := st.pos
-	for !st.eof() && st.head() != "\n" {
+	for !st.eof() && !st.startsWith("\n") {
 		st.consumeLine()
 	}
 	end := st.pos
 	block := st.source[begin:end]
 	node := NodeData{
 		Type:       "Paragraph",
+		Attributes: map[string]string{},
+		Children:   parseText(block),
+	}
+	return node
+}
+
+func parseText(source []byte) []NodeData {
+	node := NodeData{
+		Type:       "Text",
+		Attributes: map[string]string{},
+		Literal:    string(source),
+	}
+	return []NodeData{node}
+}
+
+func parseSnippet(st *ParserState) NodeData {
+	begin := st.pos
+	for !st.eof() {
+		line := st.consumeLine()
+		if bytes.Index(line, []byte{'<', '/', 's', 'n', 'i', 'p', 'p', 'e', 't', '>'}) >= 0 {
+			break
+		}
+	}
+	end := st.pos
+	// TODO: тут надо извлечь сам текст сниппета и его айдишник
+	block := st.source[begin:end]
+	node := NodeData{
+		Type:       "Snippet",
 		Attributes: map[string]string{},
 		Literal:    string(block),
 	}
@@ -69,14 +107,14 @@ var yamlkvRegexp = regexp.MustCompile(`([a-z]+): (.+)`) //nolint:golint,lll
 
 func parseMeta(doc *NodeData, st *ParserState) {
 	st.consumeLine()
-	for !st.eof() && st.head(3) != "---" && st.head() != "\n" {
+	for !st.eof() && !st.startsWith("---") && !st.startsWith("\n") {
 		line := st.consumeLine()
 		kv := yamlkvRegexp.FindAllSubmatch(line, -1)
 		if len(kv) > 0 {
 			doc.Attributes[string(kv[0][1])] = string(kv[0][2])
 		}
 	}
-	if !st.eof() && st.head(3) == "---" {
+	if !st.eof() && st.startsWith("---") {
 		st.consumeLine()
 	}
 }
@@ -109,6 +147,25 @@ func parseHeading(st *ParserState) NodeData {
 	return node
 }
 
+func parseList(st *ParserState) NodeData {
+	node := NodeData{
+		Type:       "List",
+		Attributes: map[string]string{},
+		Children:   []NodeData{},
+	}
+	for !st.eof() && st.startsWith("* ") {
+		st.consumeN(2)
+		line := st.consumeLine()
+		text := parseText(line)
+		li := NodeData{
+			Type:     "ListItem",
+			Children: text,
+		}
+		node.Children = append(node.Children, li)
+	}
+	return node
+}
+
 type ParserState struct {
 	pos    int
 	source []byte
@@ -116,6 +173,10 @@ type ParserState struct {
 
 func (st *ParserState) eof() bool {
 	return st.pos >= len(st.source)
+}
+
+func (st *ParserState) startsWith(s string) bool {
+	return st.head(len(s)) == s
 }
 
 func (st *ParserState) head(counts ...int) string {
