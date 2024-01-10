@@ -47,26 +47,7 @@ func dumpFile(input string) error {
 	return nil
 }
 
-func collapseTextSiblings(root *md2json.NodeData) {
-
-	out := []md2json.NodeData{}
-	in := root.Children
-
-	for len(in) > 0 {
-		n := in[0]
-		in = in[1:]
-		if len(in) > 0 && n.Type == "Text" && in[0].Type == "Text" {
-			n.Literal = n.Literal + in[0].Literal
-			in = in[1:]
-		} else {
-			collapseTextSiblings((&n))
-		}
-		out = append(out, n)
-	}
-	root.Children = out
-}
-
-func writeJson(root *md2json.NodeData, path string) {
+func writeJson(root *md2json.Node, path string) {
 	jsonData, err := json.Marshal(root)
 	if err != nil {
 		return
