@@ -8,7 +8,6 @@ import (
 
 func ParseDocument(source []byte) NodeData {
 	st := ParserState{
-		pos:    0,
 		source: source,
 	}
 	node := parseDocument(&st)
@@ -61,12 +60,12 @@ func parseDocument(st *ParserState) NodeData {
 }
 
 func parseParagraph(st *ParserState) NodeData {
-	begin := st.pos
+	s1 := st.source
 	for !st.eof() && !st.startsWith("\n") {
 		st.consumeLine()
 	}
-	end := st.pos
-	block := st.source[begin:end]
+	l := len(s1) - len(st.source)
+	block := s1[:l]
 	node := NodeData{
 		Type:       "Paragraph",
 		Attributes: map[string]string{},
@@ -85,16 +84,16 @@ func parseText(source []byte) []NodeData {
 }
 
 func parseSnippet(st *ParserState) NodeData {
-	begin := st.pos
+	s1 := st.source
 	for !st.eof() {
 		line := st.consumeLine()
 		if bytes.Index(line, []byte{'<', '/', 's', 'n', 'i', 'p', 'p', 'e', 't', '>'}) >= 0 {
 			break
 		}
 	}
-	end := st.pos
+	l := len(s1) - len(st.source)
 	// TODO: тут надо извлечь сам текст сниппета и его айдишник
-	block := st.source[begin:end]
+	block := s1[:l]
 	node := NodeData{
 		Type:       "Snippet",
 		Attributes: map[string]string{},
@@ -121,7 +120,7 @@ func parseMeta(doc *NodeData, st *ParserState) {
 
 func parseHeading(st *ParserState) NodeData {
 	level := 0
-	for ; st.pos+level < len(st.source) && st.source[st.pos+level] == '#'; level++ {
+	for ; level < len(st.source) && st.source[level] == '#'; level++ {
 	}
 	st.consumeN(level + 1)
 	node := NodeData{
@@ -167,12 +166,11 @@ func parseList(st *ParserState) NodeData {
 }
 
 type ParserState struct {
-	pos    int
 	source []byte
 }
 
 func (st *ParserState) eof() bool {
-	return st.pos >= len(st.source)
+	return len(st.source) == 0
 }
 
 func (st *ParserState) startsWith(s string) bool {
@@ -184,10 +182,10 @@ func (st *ParserState) head(counts ...int) string {
 	if len(counts) > 0 {
 		count = counts[0]
 	}
-	if st.pos+count > len(st.source) {
-		count = len(st.source) - st.pos
+	if count > len(st.source) {
+		count = len(st.source)
 	}
-	h := st.source[st.pos : st.pos+count]
+	h := st.source[:count]
 	if h[len(h)-1] == '\r' {
 		h = append(h[0:len(h)-1], '\n')
 	}
@@ -195,28 +193,28 @@ func (st *ParserState) head(counts ...int) string {
 }
 
 func (st *ParserState) consumeLine() []byte {
-	pos := st.pos
-	begin := st.pos
+	pos := 0
 	for ; pos < len(st.source) && st.source[pos] != '\n'; pos++ {
 	}
 	end := pos
 	if pos < len(st.source) {
-		if pos > begin && st.source[end-1] == '\r' {
+		if pos > 0 && st.source[end-1] == '\r' {
 			end -= 1
 		}
 		if st.source[pos] == '\n' {
 			pos += 1
 		}
 	}
-	st.pos = pos
-	return st.source[begin:end]
+	line := st.source[0:end]
+	st.source = st.source[pos:]
+	return line
 }
 
 func (st *ParserState) consumeN(n int) []byte {
-	begin := st.pos
-	if begin+n > len(st.source) {
-		n = len(st.source) - begin
+	if n > len(st.source) {
+		n = len(st.source)
 	}
-	st.pos += n
-	return st.source[begin : begin+n]
+	line := st.source[:n]
+	st.source = st.source[n:]
+	return line
 }
