@@ -194,8 +194,16 @@ func (st *InlineParserState) parseHtml() {
 	if tagEnd < 0 {
 		return
 	}
+	selfClosing := false
+	if tagEnd > 0 && st.source[tagEnd-1] == '/' {
+		selfClosing = true
+		tagEnd -= 1
+	}
 	tagAttrs := st.consumeN(tagEnd)
 	st.consumeN(1) // wipe > symbol
+	if selfClosing {
+		st.consumeN(1)
+	}
 	if st.startsWith([]byte{'\n'}) {
 		st.consumeN(1)
 	}
@@ -204,14 +212,19 @@ func (st *InlineParserState) parseHtml() {
 	for i := range attrMatches {
 		attrs[string(attrMatches[i][1])] = string(attrMatches[i][2])
 	}
-	closure := append([]byte{'<', '/'}, tagName...)
-	closure = append(closure, '>')
-	finish := bytes.Index(st.source, closure)
-	if finish < 0 {
-		return
+	var text string
+	if !selfClosing {
+		closure := append([]byte{'<', '/'}, tagName...)
+		closure = append(closure, '>')
+		finish := bytes.Index(st.source, closure)
+		if finish < 0 {
+			return
+		}
+		text = string(st.consumeN(finish))
+		st.consumeN(len(closure))
+	} else {
+		text = ""
 	}
-	text := string(st.consumeN(finish))
-	st.consumeN(len(closure))
 	node := Node{
 		Type:       HTML,
 		Attributes: attrs,
@@ -285,27 +298,30 @@ func parseText(source []byte) []Node {
 }
 
 func parseSnippet(st *ParserState) Node {
+	st.consumeN(len("<snippet "))
+	tagEnd := bytes.Index(st.source, []byte{'>'})
+	tagAttrs := st.consumeN(tagEnd)
+	st.consumeN(1)
+	if st.startsWith("\n") {
+		st.consumeN(1)
+	}
 	s1 := st.source
 	for !st.eof() {
 		line := st.consumeLine()
-		if bytes.Index(line, []byte{'<', '/', 's', 'n', 'i', 'p', 'p', 'e', 't', '>'}) >= 0 {
+		if bytes.Index(line, []byte("</snippet>")) >= 0 {
 			break
 		}
 	}
 	l := len(s1) - len(st.source)
-	// TODO: тут надо извлечь сам текст сниппета и его айдишник
-	block := s1[:l]
-	children := parseText(block)
-	html := children[0]
 	node := Node{
 		Type:       Snippet,
 		Attributes: map[string]string{},
-		Literal:    html.Literal,
+		Literal:    string(s1[:l]),
 	}
-	for k, v := range html.Attributes {
-		if k != "tag" {
-			node.Attributes[k] = v
-		}
+
+	attrMatches := tagAttrsRegexp.FindAllSubmatch(tagAttrs, -1)
+	for i := range attrMatches {
+		node.Attributes[string(attrMatches[i][1])] = string(attrMatches[i][2])
 	}
 	return node
 }

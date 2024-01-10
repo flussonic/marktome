@@ -53,6 +53,7 @@ func main() {
 		}
 		md2json.CrosscheckSuperlinks("tmp/en")
 		md2json.CrosscheckSuperlinks("tmp/ru")
+		md2json.CopySnippets("tmp")
 	}
 	if true {
 		Convert1("live.md", "output.txt")

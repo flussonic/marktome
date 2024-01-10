@@ -34,6 +34,10 @@ This is a comment.
 Should not get out of MD
 -->
 
+This is a copy if static.conf snippet:
+
+<include-snippet id="static.conf" />
+
 The format of a stream definition in the **/etc/flussonic/flussonic.conf** file is:
 
 <snippet id="static.conf">
