@@ -99,8 +99,7 @@ func Convert1(input string, output string) error {
 	if err != nil {
 		return err
 	}
-	json := md2json.Parse(source)
-	collapseTextSiblings(&json)
+	json := md2json.ParseDocument(source)
 	writeJson(&json, output)
 	return nil
 }
@@ -122,18 +121,11 @@ func main() {
 			fmt.Printf("Ошибка при обходе каталога: %v\n", err)
 		}
 	}
-	if false {
+	if true {
 		Convert1("live.md", "output.txt")
 	}
 	if false {
 		dumpFile("../erlydoc/src/ru/webrtc.md")
 	}
 
-	if true {
-		file, _ := os.Open("live.md")
-		defer file.Close()
-		source, _ := io.ReadAll(file)
-		json := md2json.ParseDocument(source)
-		writeJson(&json, "output.txt")
-	}
 }

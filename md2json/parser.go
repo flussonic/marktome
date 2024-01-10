@@ -6,6 +6,14 @@ import (
 	"regexp"
 )
 
+// NodeData - структура для хранения данных узла Markdown
+type NodeData struct {
+	Type       string            `json:"type"`
+	Children   []NodeData        `json:"children,omitempty"`
+	Literal    string            `json:"text,omitempty"`
+	Attributes map[string]string `json:"attributes,omitempty"`
+}
+
 func ParseDocument(source []byte) NodeData {
 	st := ParserState{
 		source: source,
@@ -49,13 +57,13 @@ func parseDocument(st *ParserState) NodeData {
 			continue
 		}
 
-		child := parseParagraph(st)
-		node.Children = append(node.Children, child)
-	}
-	// switch source[pos] {
-	// case '#':
+		if st.startsWith("!!! ") {
+			node.Children = append(node.Children, parseAdmonition(st))
+			continue
+		}
 
-	// }
+		node.Children = append(node.Children, parseParagraph(st))
+	}
 	return node
 }
 
@@ -74,13 +82,141 @@ func parseParagraph(st *ParserState) NodeData {
 	return node
 }
 
-func parseText(source []byte) []NodeData {
-	node := NodeData{
-		Type:       "Text",
-		Attributes: map[string]string{},
-		Literal:    string(source),
+type InlineParserState struct {
+	source   []byte
+	pos      int
+	children []NodeData
+}
+
+func (st *InlineParserState) flushText() {
+	if st.pos > 1 {
+		node := NodeData{Type: "Text", Literal: string(st.source[0:st.pos])}
+		st.children = append(st.children, node)
+		st.source = st.source[st.pos:]
+		st.pos = 0
 	}
-	return []NodeData{node}
+}
+
+func (st *InlineParserState) consumeN(n int) []byte {
+	if st.pos+n > len(st.source) {
+		n = len(st.source) - st.pos
+	}
+	st.pos += n
+	s := st.source[0:st.pos]
+	st.source = st.source[st.pos:]
+	st.pos = 0
+	return s
+}
+
+func (st *InlineParserState) startsWith(s []byte) bool {
+	if st.pos+len(s) >= len(st.source) {
+		return false
+	}
+	return bytes.Equal(s, st.source[st.pos:st.pos+len(s)])
+}
+
+func (st *InlineParserState) parseInliner(symbol []byte, typ string) {
+	if !st.startsWith(symbol) {
+		return
+	}
+	st.flushText()
+	st.consumeN(len(symbol))
+	i := bytes.Index(st.source, symbol)
+	if i > 0 {
+		st.children = append(st.children, NodeData{Type: typ, Literal: string(st.consumeN(i))})
+		st.consumeN(len(symbol))
+	}
+}
+
+var tagAttrsRegexp = regexp.MustCompile(`([a-z]+)="([^"]+)"`) //nolint:golint,lll
+
+func (st *InlineParserState) parseHtml() {
+	if st.startsWith([]byte{'<', '/'}) {
+		return
+	}
+	if !st.startsWith([]byte{'<'}) {
+		return
+	}
+	st.flushText()
+	st.consumeN(1)
+	nameEnd := bytes.Index(st.source, []byte{' '})
+	if nameEnd < 0 {
+		st.flushText()
+		return
+	}
+	tagName := st.consumeN(nameEnd)
+	attrs := map[string]string{}
+	attrs["tag"] = string(tagName)
+
+	tagEnd := bytes.Index(st.source, []byte{'>'})
+	if tagEnd < 0 {
+		return
+	}
+	tagAttrs := st.consumeN(tagEnd)
+	st.consumeN(1) // wipe > symbol
+	if st.startsWith([]byte{'\n'}) {
+		st.consumeN(1)
+	}
+
+	attrMatches := tagAttrsRegexp.FindAllSubmatch(tagAttrs, -1)
+	for i := range attrMatches {
+		attrs[string(attrMatches[i][1])] = string(attrMatches[i][2])
+	}
+	closure := append([]byte{'<', '/'}, tagName...)
+	closure = append(closure, '>')
+	finish := bytes.Index(st.source, closure)
+	if finish < 0 {
+		return
+	}
+	text := string(st.consumeN(finish))
+	st.consumeN(len(closure))
+	node := NodeData{
+		Type:       "HTML",
+		Attributes: attrs,
+		Literal:    text,
+	}
+	st.children = append(st.children, node)
+}
+
+func (st *InlineParserState) parseImage() {
+	if !st.startsWith([]byte{'!', '['}) {
+		return
+	}
+	st.consumeN(2)
+	titleEnd := bytes.Index(st.source, []byte{']', '('})
+	if titleEnd < 0 {
+		return
+	}
+	title := string(st.consumeN(titleEnd))
+	st.consumeN(2)
+	urlEnd := bytes.Index(st.source, []byte{')'})
+	if urlEnd < 0 {
+		return
+	}
+	url := string(st.consumeN(urlEnd))
+	st.consumeN(1)
+	node := NodeData{
+		Type:       "Image",
+		Attributes: map[string]string{"title": title, "src": url},
+	}
+	st.children = append(st.children, node)
+}
+
+func parseText(source []byte) []NodeData {
+	st := InlineParserState{
+		source:   source,
+		children: []NodeData{},
+		pos:      0,
+	}
+	for ; st.pos < len(st.source); st.pos++ {
+		st.parseInliner([]byte{'`'}, "Code")
+		st.parseInliner([]byte{'*', '*'}, "Bold")
+		st.parseInliner([]byte{'*'}, "Emphasis")
+		st.parseImage()
+		st.parseHtml()
+	}
+	st.flushText()
+	return st.children
 }
 
 func parseSnippet(st *ParserState) NodeData {
@@ -94,10 +230,17 @@ func parseSnippet(st *ParserState) NodeData {
 	l := len(s1) - len(st.source)
 	// TODO: тут надо извлечь сам текст сниппета и его айдишник
 	block := s1[:l]
+	children := parseText(block)
+	html := children[0]
 	node := NodeData{
 		Type:       "Snippet",
 		Attributes: map[string]string{},
-		Literal:    string(block),
+		Literal:    html.Literal,
+	}
+	for k, v := range html.Attributes {
+		if k != "tag" {
+			node.Attributes[k] = v
+		}
 	}
 	return node
 }
@@ -161,6 +304,18 @@ func parseList(st *ParserState) NodeData {
 			Children: text,
 		}
 		node.Children = append(node.Children, li)
+	}
+	return node
+}
+
+func parseAdmonition(st *ParserState) NodeData {
+	st.consumeN(len("!!! "))
+	level := string(st.consumeLine())
+	child := parseParagraph(st)
+	node := NodeData{
+		Type:       "Admonition",
+		Attributes: map[string]string{"level": level},
+		Children:   []NodeData{child},
 	}
 	return node
 }
