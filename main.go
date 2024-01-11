@@ -21,7 +21,7 @@ func Convert1(input string, output string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Convert", input)
+	fmt.Println("Converting", input)
 	json := md2json.ParseDocument(source)
 	md2json.WriteJson(&json, output)
 	return nil
@@ -54,6 +54,8 @@ func main() {
 		md2json.CrosscheckSuperlinks("tmp/en")
 		md2json.CrosscheckSuperlinks("tmp/ru")
 		md2json.CopySnippets("tmp")
+		md2json.AddCanonical("tmp/ru")
+		md2json.AddCanonical("tmp/en")
 	}
 	if true {
 		Convert1("live.md", "output.txt")
