@@ -51,11 +51,17 @@ func main() {
 		if err != nil {
 			fmt.Printf("Ошибка при обходе каталога: %v\n", err)
 		}
+		err = md2json.Rename2Translit("tmp/ru")
+		if err != nil {
+			fmt.Printf("Rename tmp/ru error: %v\n", err)
+		}
+		err = md2json.Rename2Translit("tmp/en")
+		if err != nil {
+			fmt.Printf("Rename tmp/en error: %v\n", err)
+		}
 		md2json.CrosscheckSuperlinks("tmp/en")
 		md2json.CrosscheckSuperlinks("tmp/ru")
 		md2json.CopySnippets("tmp")
-		md2json.AddCanonical("tmp/ru")
-		md2json.AddCanonical("tmp/en")
 	}
 	if true {
 		Convert1("live.md", "output.txt")

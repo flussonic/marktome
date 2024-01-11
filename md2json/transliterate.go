@@ -1,6 +1,8 @@
 package md2json
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,54 +57,60 @@ func Slugify(s string) string {
 	s = strings.ReplaceAll(s, "(", "")
 	s = strings.ReplaceAll(s, ")", "")
 	s = strings.ReplaceAll(s, " ", "-")
+	s = strings.ReplaceAll(s, "/", "-")
+	s = strings.ReplaceAll(s, ",", "-")
 	return s
 }
 
-func AddCanonical(rootDir string) error {
-	var transliterate = func(fp string, fi os.DirEntry, err error) error {
-		if fi.IsDir() {
-			return nil
-		}
+func Rename2Translit(rootDir string) error {
+	paths := listAllMd(rootDir)
+
+	for _, fp := range paths {
 		doc, err := ReadJson(fp)
 		if err != nil {
 			return err
 		}
-		dirty := false
 
-		var searchHeading func(n *Node) (string, bool)
+		var searchHeading func(n *Node) (string, string, bool)
 
-		searchHeading = func(n *Node) (string, bool) {
+		searchHeading = func(n *Node) (string, string, bool) {
 			if n.Type == Heading && n.Attributes != nil {
 				level, ok1 := n.Attributes["level"]
-				if ok1 && level == "1" {
-					return n.Literal, true
+				id, ok2 := n.Attributes["id"]
+				if ok1 && ok2 && level == "1" {
+					return n.Literal, id, true
 				}
 			}
 			if n.Children != nil {
 				for i := range n.Children {
-					val, found := searchHeading(&n.Children[i])
+					val1, val2, found := searchHeading(&n.Children[i])
 					if found {
-						return val, found
+						return val1, val2, found
 					}
 				}
 			}
-			return "", false
+			return "", "", false
 		}
-		heading, found := searchHeading(&doc)
-		if found {
-			if doc.Attributes == nil {
-				doc.Attributes = map[string]string{}
-			}
-			doc.Attributes["canonical"] = strings.TrimSuffix(strings.TrimPrefix(fp, rootDir), ".md")
-			doc.Attributes["title"] = heading
-			doc.Attributes["path"] = Slugify(Transliterate(heading))
-			dirty = true
+		heading, id, found := searchHeading(&doc)
+		if !found {
+			return errors.New(fmt.Sprintf("No heading and title in %s", fp))
 		}
-		if dirty {
-			WriteJson(&doc, fp)
+		if doc.Attributes == nil {
+			doc.Attributes = map[string]string{}
 		}
-		return nil
+		doc.Attributes["canonical"] = strings.TrimSuffix(strings.TrimPrefix(fp, rootDir), ".md")
+		doc.Attributes["title"] = heading
+		slug := Slugify(Transliterate(heading))
+		doc.Attributes["path"] = slug
+
+		output := fmt.Sprintf("%s/%s/%s.md", rootDir, id, slug)
+		os.MkdirAll(filepath.Dir(output), os.ModePerm)
+		err = WriteJson(&doc, output)
+		if err != nil {
+			return err
+		}
+		os.Remove(fp)
+		os.Remove(filepath.Dir(fp))
 	}
-	err := filepath.WalkDir(rootDir, transliterate)
-	return err
+	return nil
 }

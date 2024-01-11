@@ -267,7 +267,7 @@ func (st *InlineParserState) parseLink() {
 }
 
 func (st *InlineParserState) parseImage() {
-	if !st.startsWith([]byte{'!'}) {
+	if !st.startsWith([]byte{'!', '['}) {
 		return
 	}
 	st.consumeN(1)

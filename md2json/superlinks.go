@@ -1,51 +1,12 @@
 package md2json
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-func ReadJson(input string) (Node, error) {
-	file, err := os.Open(input)
-	if err != nil {
-		return Node{}, err
-	}
-	defer file.Close()
-
-	// Создаем буфер для чтения из файла
-	source, err := io.ReadAll(file)
-	if err != nil {
-		return Node{}, err
-	}
-
-	doc := Node{}
-	json.Unmarshal(source, &doc)
-	return doc, nil
-}
-
-func WriteJson(root *Node, path string) error {
-	jsonData, err := json.Marshal(root)
-	if err != nil {
-		return err
-	}
-
-	output, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-
-	_, err = output.Write(jsonData)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func calculateRelativeLocation(origin string, target string) string {
 	origin = "/" + strings.TrimSuffix(strings.TrimPrefix(origin, "/"), "/") + "/"
