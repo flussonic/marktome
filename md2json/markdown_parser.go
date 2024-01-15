@@ -3,43 +3,26 @@ package md2json
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"regexp"
 )
 
-type Kind string
-type AttributeMap map[string]string
-
-const (
-	Document   Kind = "Document"
-	Paragraph  Kind = "Paragraph"
-	Text       Kind = "Text"
-	Image      Kind = "Image"
-	HTML       Kind = "HTML"
-	Snippet    Kind = "Snippet"
-	Heading    Kind = "Heading"
-	Link       Kind = "Link"
-	List       Kind = "List"
-	ListItem   Kind = "ListItem"
-	Admonition Kind = "Admonition"
-	Code       Kind = "Code"
-	CodeFence  Kind = "CodeFence"
-	Bold       Kind = "Bold"
-	Emphasis   Kind = "Emphasis"
-)
-
-type Node struct {
-	Type       Kind         `json:"type"`
-	Children   []Node       `json:"children,omitempty"`
-	Literal    string       `json:"text,omitempty"`
-	Attributes AttributeMap `json:"attributes,omitempty"`
-}
-
-func ParseDocument(source []byte) Node {
+func MarkdownParse(source []byte) Node {
 	st := ParserState{
 		source: source,
 	}
 	node := parseDocument(&st)
 	return node
+}
+
+func Md2Json(input string, output string) error {
+	source, err := os.ReadFile(input)
+	if err != nil {
+		return err
+	}
+	json := MarkdownParse(source)
+	err = WriteJson(&json, output)
+	return err
 }
 
 func parseDocument(st *ParserState) Node {

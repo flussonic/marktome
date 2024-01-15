@@ -3,29 +3,10 @@ package main
 import (
 	"fmt"
 	"foli2/md2json"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-func Convert1(input string, output string) error {
-	file, err := os.Open(input)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Создаем буфер для чтения из файла
-	source, err := io.ReadAll(file)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Converting", input)
-	json := md2json.ParseDocument(source)
-	md2json.WriteJson(&json, output)
-	return nil
-}
 
 func main() {
 	if true {
@@ -38,9 +19,9 @@ func main() {
 				return nil
 			}
 
-			output := "tmp/" + strings.TrimPrefix(fp, rootDir)
+			output := "tmp2/" + strings.TrimPrefix(fp, rootDir)
 			os.MkdirAll(filepath.Dir(output), os.ModePerm)
-			err = Convert1(fp, output)
+			err = md2json.Md2Json(fp, output)
 			// output2 := strings.TrimSuffix(output, ".md") + ".json"
 			// cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("cat %s | jq > %s", output, output2))
 			// cmd.Run()
@@ -51,20 +32,36 @@ func main() {
 		if err != nil {
 			fmt.Printf("Ошибка при обходе каталога: %v\n", err)
 		}
-		err = md2json.Rename2Translit("tmp/ru")
+		err = md2json.Planarize("tmp2/ru")
 		if err != nil {
-			fmt.Printf("Rename tmp/ru error: %v\n", err)
+			fmt.Printf("Rename tmp2/ru error: %v\n", err)
 		}
-		err = md2json.Rename2Translit("tmp/en")
+		err = md2json.Planarize("tmp2/en")
 		if err != nil {
-			fmt.Printf("Rename tmp/en error: %v\n", err)
+			fmt.Printf("Rename tmp2/en error: %v\n", err)
 		}
-		md2json.CrosscheckSuperlinks("tmp/en")
-		md2json.CrosscheckSuperlinks("tmp/ru")
-		md2json.CopySnippets("tmp")
+		md2json.CrosscheckSuperlinks("tmp2/en")
+		md2json.CrosscheckSuperlinks("tmp2/ru")
+		md2json.CopySnippets("tmp2")
+		paths := md2json.ListAllMd("tmp2")
+		for _, out := range paths {
+			out2 := "tmp/" + strings.TrimPrefix(out, "tmp2/")
+			os.MkdirAll(filepath.Dir(out2), os.ModePerm)
+			err = md2json.Json2Md(out, out2)
+			if err != nil {
+				fmt.Printf("Write json %s error: %v\n", out, err)
+			}
+		}
 	}
-	if true {
-		Convert1("live.md", "output.txt")
+	if false {
+		err := md2json.Mkdocs("../erlydoc/f2/foliant.flussonic.en.yml")
+		if err != nil {
+			fmt.Println("Failed to read mkdocs.yml", err)
+		}
+
+	}
+	if false {
+		md2json.Md2Json("live.md", "output.txt")
 		// Convert1("../erlydoc/src/en/watcher/authorization-backend.md", "output.txt")
 	}
 }

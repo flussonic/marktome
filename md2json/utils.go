@@ -45,7 +45,7 @@ func WriteJson(root *Node, path string) error {
 	return nil
 }
 
-func listAllMd(rootDir string) []string {
+func ListAllMd(rootDir string) []string {
 	files := []string{}
 
 	var visit = func(fp string, fi os.DirEntry, err error) error {
@@ -61,4 +61,13 @@ func listAllMd(rootDir string) []string {
 	}
 	filepath.WalkDir(rootDir, visit)
 	return files
+}
+
+func Slugify(s string) string {
+	s = strings.ReplaceAll(s, "(", "")
+	s = strings.ReplaceAll(s, ")", "")
+	s = strings.ReplaceAll(s, " ", "-")
+	s = strings.ReplaceAll(s, "/", "-")
+	s = strings.ReplaceAll(s, ",", "-")
+	return s
 }

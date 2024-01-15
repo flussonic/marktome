@@ -53,17 +53,8 @@ func Transliterate(title string) string {
 	return title
 }
 
-func Slugify(s string) string {
-	s = strings.ReplaceAll(s, "(", "")
-	s = strings.ReplaceAll(s, ")", "")
-	s = strings.ReplaceAll(s, " ", "-")
-	s = strings.ReplaceAll(s, "/", "-")
-	s = strings.ReplaceAll(s, ",", "-")
-	return s
-}
-
 func Rename2Translit(rootDir string) error {
-	paths := listAllMd(rootDir)
+	paths := ListAllMd(rootDir)
 
 	for _, fp := range paths {
 		doc, err := ReadJson(fp)
@@ -71,27 +62,7 @@ func Rename2Translit(rootDir string) error {
 			return err
 		}
 
-		var searchHeading func(n *Node) (string, string, bool)
-
-		searchHeading = func(n *Node) (string, string, bool) {
-			if n.Type == Heading && n.Attributes != nil {
-				level, ok1 := n.Attributes["level"]
-				id, ok2 := n.Attributes["id"]
-				if ok1 && ok2 && level == "1" {
-					return n.Literal, id, true
-				}
-			}
-			if n.Children != nil {
-				for i := range n.Children {
-					val1, val2, found := searchHeading(&n.Children[i])
-					if found {
-						return val1, val2, found
-					}
-				}
-			}
-			return "", "", false
-		}
-		heading, id, found := searchHeading(&doc)
+		heading, id, found := doc.Heading()
 		if !found {
 			return errors.New(fmt.Sprintf("No heading and title in %s", fp))
 		}
