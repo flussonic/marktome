@@ -1,7 +1,9 @@
 all:
 	go build
-	rm -rf tmp tmp2
-	./foli2 md2json ../erlydoc/src/ tmp2
+	rm -rf tmp tmp2 stage0
+	cp -r ../erlydoc/src stage0
+	./foli2 macros stage0 ../erlydoc/f2/foliant.flussonic.en.yml
+	./foli2 md2json stage0 tmp2
 	./foli2 planarize tmp2/ru
 	./foli2 planarize tmp2/en
 	./foli2 superlinks tmp2/ru
@@ -18,5 +20,7 @@ all:
 	./mkdocs-clean.py tmp/ru/mkdocs.yml
 	cp -r ../erlydoc/f2/overrides tmp/en/overrides
 	cp -r ../erlydoc/f2/overrides tmp/ru/overrides
+	cp -r ../erlydoc/assets tmp/en/doc/img
+	cp -r ../erlydoc/assets tmp/ru/doc/img
 	cd tmp/en && mkdocs build
-	rm -rf tmp2
+	# rm -rf tmp2

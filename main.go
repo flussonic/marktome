@@ -13,6 +13,7 @@ var commands = map[string]CommandFunction{
 	"planarize":      md2json.Command_planarize,
 	"superlinks":     md2json.Command_superlinks,
 	"snippets":       md2json.Command_snippets,
+	"macros":         md2json.Command_macros,
 	"foliant2mkdocs": md2json.Commmand_foliant2mkdocs,
 	"json2md":        md2json.Command_json2md,
 }

@@ -11,11 +11,10 @@ with open(sys.argv[1]) as f:
 del mkdocs['plugins']
 mkdocs['theme']['custom_dir'] = "overrides"
 mkdocs['docs_dir'] = "doc"
-mkdocs['markdown_extensions'] = {
-  "toc": {
-    "permalink": []
-  }
-}
+mkdocs['markdown_extensions'].append({"toc": {
+  "permalink": []
+}})
+
 
 with open(sys.argv[1], "w") as f:
   f.write(yaml.dump(mkdocs, default_flow_style=False, sort_keys=False))
