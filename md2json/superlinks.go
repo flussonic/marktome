@@ -9,13 +9,14 @@ import (
 )
 
 func calculateRelativeLocation(origin string, target string) string {
-	origin = "/" + strings.TrimSuffix(strings.TrimPrefix(origin, "/"), "/") + "/"
-	target = "/" + strings.TrimSuffix(strings.TrimPrefix(target, "/"), "/") + "/"
-	rel, _ := filepath.Rel(origin, target)
-	if rel == "." {
-		return ""
-	}
-	return rel + "/"
+	return strings.TrimPrefix(target, "/") + ".md"
+	// origin = "/" + strings.TrimSuffix(strings.TrimPrefix(origin, "/"), "/") + "/"
+	// target = "/" + strings.TrimSuffix(strings.TrimPrefix(target, "/"), "/") + "/"
+	// rel, _ := filepath.Rel(origin, target)
+	// if rel == "." {
+	// 	return ""
+	// }
+	// return rel + "/"
 }
 
 func CrosscheckSuperlinks(rootDir string) error {

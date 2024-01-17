@@ -1,7 +1,6 @@
 package md2json
 
 import (
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -28,7 +27,6 @@ func Foliant2Mkdocs(input string, output string) error {
 				if reflect.TypeOf(v).Kind() == reflect.String {
 					newPath, ok := renames[v.(string)]
 					if ok {
-						fmt.Printf("Renaming %d %s to %s\n", i, v, newPath)
 						menu.([]interface{})[i] = newPath
 					}
 				}
@@ -59,6 +57,11 @@ func Foliant2Mkdocs(input string, output string) error {
 	}
 	renameChapters(nav)
 	mkdocs["nav"] = nav
+	title, ok := foliant["title"]
+	if ok {
+		delete(foliant, "title")
+		mkdocs["site_name"] = title
+	}
 	err = YamlWrite(mkdocs, output)
 	return err
 }
