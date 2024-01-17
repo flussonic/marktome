@@ -33,8 +33,10 @@ func Planarize(rootDir string) error {
 		if err != nil {
 			return err
 		}
-		os.Remove(fp)
-		os.Remove(filepath.Dir(fp))
+		if fp != output {
+			os.Remove(fp)
+			os.Remove(filepath.Dir(fp))
+		}
 	}
 	return nil
 }
