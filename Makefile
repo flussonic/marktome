@@ -21,6 +21,8 @@ all:
 	cp -r ../erlydoc/f2/overrides tmp/en/overrides
 	cp -r ../erlydoc/f2/overrides tmp/ru/overrides
 	cp -r ../erlydoc/assets tmp/en/doc/img
+	cp -r ../erlydoc/images tmp/en/doc/img/auto
 	cp -r ../erlydoc/assets tmp/ru/doc/img
+	cp -r ../erlydoc/images tmp/ru/doc/img/auto
 	cd tmp/en && mkdocs build
 	# rm -rf tmp2
