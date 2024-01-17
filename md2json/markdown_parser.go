@@ -53,8 +53,8 @@ func parseDocument(st *ParserState) Node {
 			continue
 		}
 
-		if st.startsWith("<snippet ") {
-			node.Children = append(node.Children, parseSnippet(st))
+		if st.startsWith("<") {
+			node.Children = append(node.Children, parseBlockHTML(st))
 			continue
 		}
 
@@ -90,10 +90,18 @@ func parseDocument(st *ParserState) Node {
 
 func parseParagraph(st *ParserState) Node {
 	s1 := st.source
-	for !st.eof() && !st.startsWith("\n") {
+	// fmt.Printf("Go into paragraph: '%s'\n", s1[:20])
+	for !st.eof() && !st.startsWith("\n") && !st.startsWith("<") && !st.startsWith("```") {
 		st.consumeLine()
+		// fmt.Printf("Consume line '%s'\n", s)
 	}
+	// for !st.eof() && (st.source[0] == ' ' || st.source[0] == '\t') {
+	// 	fmt.Printf("Consume char %d\n", st.source[0])
+	// 	st.consumeN(1)
+	// }
 	l := len(s1) - len(st.source)
+	// fmt.Printf("Paragraph is %d bytes. Flags: %b/%b/%b/%b\n", l,
+	// 	st.eof(), st.startsWith("\n"), st.startsWith("<"), st.startsWith("```"))
 	block := s1[:l]
 	node := Node{
 		Type:       Paragraph,
@@ -113,7 +121,11 @@ func (st *InlineParserState) flushText() {
 	if st.pos > 1 {
 		node := Node{Type: Text, Literal: string(st.source[0:st.pos])}
 		st.children = append(st.children, node)
-		st.source = st.source[st.pos:]
+		if st.pos < len(st.source) {
+			st.source = st.source[st.pos:]
+		} else {
+			st.source = []byte{}
+		}
 		st.pos = 0
 	}
 }
@@ -158,12 +170,13 @@ func (st *InlineParserState) parseHtml() {
 	if !st.startsWith([]byte{'<'}) {
 		return
 	}
-	// fmt.Printf("Reading html from %d '%s'\n", st.pos, string(st.source))
+	// fmt.Printf("Reading html from %d '%s'\n", st.pos, string(st.source[st.pos:]))
 	st.flushText()
 	st.consumeN(1)
 	tagEnd := bytes.Index(st.source, []byte{'>'})
 	if tagEnd < 0 {
-		panic(fmt.Sprintf("No closing tag for '%s'", string(st.source)))
+		// fmt.Printf("No closing tag for '%s'", string(st.source))
+		return
 	}
 	nameEnd := bytes.Index(st.source[:tagEnd], []byte{' '})
 	if nameEnd < 0 {
@@ -200,11 +213,12 @@ func (st *InlineParserState) parseHtml() {
 		closure := append([]byte{'<', '/'}, tagName...)
 		closure = append(closure, '>')
 		finish := bytes.Index(st.source, closure)
-		if finish < 0 {
-			return
+		if finish >= 0 {
+			text = string(st.consumeN(finish))
+			st.consumeN(len(closure))
+		} else {
+			text = string(st.consumeN(len(st.source)))
 		}
-		text = string(st.consumeN(finish))
-		st.consumeN(len(closure))
 	} else {
 		text = ""
 	}
@@ -235,30 +249,53 @@ func (st *InlineParserState) readLink() (Node, bool) {
 	st.consumeN(1)
 	node := Node{
 		Type:       Link,
-		Attributes: map[string]string{"title": title, "src": url},
+		Attributes: map[string]string{"href": url},
+		Literal:    title,
 	}
 	return node, true
 }
 
 func (st *InlineParserState) parseLink() {
-	node, ok := st.readLink()
-	if !ok {
+	start := st.pos
+	if !st.startsWith([]byte{'['}) || len(st.source)-start < 4 {
 		return
 	}
-	node.Type = Link
+	titleEnd := bytes.Index(st.source[start:], []byte{']', '('})
+	urlEnd := bytes.Index(st.source[start+titleEnd:], []byte{')'})
+	if titleEnd < 0 || urlEnd < 0 {
+		return
+	}
+	st.flushText()
+	title := string(st.source[1:titleEnd])
+	url := string(st.source[titleEnd+2 : titleEnd+urlEnd])
+	st.consumeN(titleEnd + urlEnd + 1)
+	node := Node{
+		Type:       Link,
+		Attributes: map[string]string{"href": url},
+		Literal:    title,
+	}
 	st.children = append(st.children, node)
 }
 
 func (st *InlineParserState) parseImage() {
-	if !st.startsWith([]byte{'!', '['}) {
+	start := st.pos
+	if !st.startsWith([]byte{'!', '['}) || len(st.source)-start < 5 {
 		return
 	}
-	st.consumeN(1)
-	node, ok := st.readLink()
-	if !ok {
+	titleEnd := bytes.Index(st.source[start:], []byte{']', '('})
+	urlEnd := bytes.Index(st.source[start+titleEnd:], []byte{')'})
+	if titleEnd < 0 || urlEnd < 0 {
 		return
 	}
-	node.Type = Image
+	st.flushText()
+	title := string(st.source[2:titleEnd])
+	url := string(st.source[titleEnd+2 : titleEnd+urlEnd])
+	st.consumeN(titleEnd + urlEnd + 1)
+	node := Node{
+		Type:       Image,
+		Attributes: map[string]string{"src": url},
+		Literal:    title,
+	}
 	st.children = append(st.children, node)
 }
 
@@ -280,34 +317,51 @@ func parseText(source []byte) []Node {
 	return st.children
 }
 
-func parseSnippet(st *ParserState) Node {
-	st.consumeN(len("<snippet "))
-	tagEnd := bytes.Index(st.source, []byte{'>'})
-	tagAttrs := st.consumeN(tagEnd)
-	st.consumeN(1)
-	if st.startsWith("\n") {
-		st.consumeN(1)
+func parseBlockHTML(st *ParserState) Node {
+	st1 := InlineParserState{
+		source:   st.source,
+		children: []Node{},
+		pos:      0,
 	}
-	s1 := st.source
-	for !st.eof() {
-		line := st.consumeLine()
-		if bytes.Index(line, []byte("</snippet>")) >= 0 {
-			break
-		}
+	st1.parseHtml()
+	if len(st1.children) > 0 {
+		st.consumeN(len(st.source) - len(st1.source))
+		return st1.children[0]
 	}
-	l := len(s1) - len(st.source)
-	node := Node{
-		Type:       Snippet,
-		Attributes: map[string]string{},
-		Literal:    string(s1[:l]),
-	}
-
-	attrMatches := tagAttrsRegexp.FindAllSubmatch(tagAttrs, -1)
-	for i := range attrMatches {
-		node.Attributes[string(attrMatches[i][1])] = string(attrMatches[i][2])
-	}
-	return node
+	line := st.consumeLine()
+	return Node{Type: Text, Literal: string(line)}
 }
+
+// func parseSnippet(st *ParserState) Node {
+// 	st.consumeN(len("<snippet "))
+// 	tagEnd := bytes.Index(st.source, []byte{'>'})
+// 	tagAttrs := st.consumeN(tagEnd)
+// 	st.consumeN(1)
+// 	if st.startsWith("\n") {
+// 		st.consumeN(1)
+// 	}
+// 	s1 := st.source
+// 	closing := "</snippet>"
+// 	contentEnd := bytes.Index(st.source, []byte(closing))
+// 	if contentEnd < 0 {
+// 		contentEnd = len(st.source)
+// 	}
+// 	st.consumeN(contentEnd + len(closing))
+// 	if st.startsWith("\n") {
+// 		st.consumeN(1)
+// 	}
+// 	node := Node{
+// 		Type:       Snippet,
+// 		Attributes: map[string]string{},
+// 		Literal:    string(s1[:contentEnd]),
+// 	}
+
+// 	attrMatches := tagAttrsRegexp.FindAllSubmatch(tagAttrs, -1)
+// 	for i := range attrMatches {
+// 		node.Attributes[string(attrMatches[i][1])] = string(attrMatches[i][2])
+// 	}
+// 	return node
+// }
 
 func parseCodeFence(st *ParserState) Node {
 	st.consumeN(len("```"))
@@ -402,8 +456,8 @@ func parseList(st *ParserState, symbol []byte) Node {
 func parseAdmonition(st *ParserState) Node {
 	st.consumeN(len("!!! "))
 	level := string(st.consumeLine())
-	for ; st.startsWith(" "); st.consumeN(1) {
-	}
+	// for ; st.startsWith(" "); st.consumeN(1) {
+	// }
 	child := parseParagraph(st)
 	node := Node{
 		Type:       Admonition,
@@ -453,4 +507,16 @@ func (st *ParserState) consumeN(n int) []byte {
 	line := st.source[:n]
 	st.source = st.source[n:]
 	return line
+}
+
+func (st *ParserState) isEmptyLine() bool {
+	for i := 0; i < len(st.source); i++ {
+		if st.source[i] == '\n' {
+			return true
+		}
+		if st.source[i] != ' ' && st.source[i] != '\t' {
+			return false
+		}
+	}
+	return true
 }

@@ -62,9 +62,16 @@ func writeNode(n *Node) []byte {
 		return writeCode(n)
 	case Heading:
 		return writeHeading(n)
+	case List:
+		return writeList(n)
+	case ListItem:
+		return writeListItem(n)
+	case Admonition:
+		return writeAdmonition(n)
 	case CodeFence:
-	case Snippet:
 		return writeCodeFence(n)
+	case HTML:
+		return writeHTML(n)
 	default:
 		fmt.Println("Type", n.Type)
 	}
@@ -151,12 +158,16 @@ func writeImage(n *Node) []byte {
 
 func writeLink(n *Node) []byte {
 	var text bytes.Buffer
-	src, _ := n.Attributes["src"]
-	title, _ := n.Attributes["title"]
+	src, _ := n.Attributes["href"]
 	text.WriteString("[")
-	text.WriteString(title)
+	text.WriteString(n.Literal)
 	text.WriteString("](")
 	text.WriteString(src)
+	anchor, ok2 := n.Attributes["anchor"]
+	if ok2 {
+		text.WriteString("#")
+		text.WriteString(anchor)
+	}
 	text.WriteString(")")
 	return text.Bytes()
 }
@@ -166,5 +177,55 @@ func writeCodeFence(n *Node) []byte {
 	text.WriteString("```\n")
 	text.WriteString(n.Literal)
 	text.WriteString("```\n\n")
+	return text.Bytes()
+}
+
+func writeList(n *Node) []byte {
+	var text bytes.Buffer
+	if n.Children != nil {
+		for _, ch := range n.Children {
+			text.Write(writeNode(&ch))
+		}
+	}
+	text.WriteString("\n")
+	return text.Bytes()
+}
+
+func writeListItem(n *Node) []byte {
+	var text bytes.Buffer
+	text.WriteString("* ")
+	if n.Children != nil {
+		for _, ch := range n.Children {
+			text.Write(writeNode(&ch))
+		}
+	}
+	text.WriteString("\n")
+	return text.Bytes()
+}
+
+func writeAdmonition(n *Node) []byte {
+	var text bytes.Buffer
+	level, _ := n.Attributes["level"]
+	text.WriteString("!!! ")
+	text.WriteString(level)
+	text.WriteString("\n")
+	text.Write(writeParagraph(n))
+	return text.Bytes()
+}
+
+func writeHTML(n *Node) []byte {
+	var text bytes.Buffer
+	tag, _ := n.Attributes["tag"]
+	text.WriteString("<")
+	text.WriteString(tag)
+	if len(n.Literal) > 0 {
+		text.WriteString(">")
+		text.WriteString(n.Literal)
+		text.WriteString("</")
+		text.WriteString(tag)
+		text.WriteString(">")
+	} else {
+		text.WriteString("/>")
+	}
 	return text.Bytes()
 }

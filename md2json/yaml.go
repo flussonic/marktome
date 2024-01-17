@@ -74,3 +74,13 @@ func YamlParse(path string) (map[string]interface{}, error) {
 
 	return obj, nil
 }
+
+func YamlWrite(obj interface{}, path string) error {
+	yamlFile, err := yaml.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	err = os.WriteFile(path, yamlFile, os.ModePerm)
+	return err
+}

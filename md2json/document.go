@@ -9,7 +9,6 @@ const (
 	Text       Kind = "Text"
 	Image      Kind = "Image"
 	HTML       Kind = "HTML"
-	Snippet    Kind = "Snippet"
 	Heading    Kind = "Heading"
 	Link       Kind = "Link"
 	List       Kind = "List"

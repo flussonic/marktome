@@ -49,14 +49,12 @@ func ListAllMd(rootDir string) []string {
 	files := []string{}
 
 	var visit = func(fp string, fi os.DirEntry, err error) error {
-		if fi.IsDir() {
-			return nil
+		if err != nil {
+			return err
 		}
-
-		if !strings.HasSuffix(fp, ".md") {
-			return nil
+		if !fi.IsDir() && strings.HasSuffix(fp, ".md") {
+			files = append(files, fp)
 		}
-		files = append(files, fp)
 		return nil
 	}
 	filepath.WalkDir(rootDir, visit)
