@@ -3,8 +3,6 @@ package md2json
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -21,11 +19,8 @@ func calculateRelativeLocation(origin string, target string) string {
 
 func CrosscheckSuperlinks(rootDir string) error {
 	headings := map[string]string{}
-	var visitHeadings = func(fp string, fi os.DirEntry, err error) error {
-		if fi.IsDir() {
-			return nil
-		}
 
+	for _, fp := range ListAllMd(rootDir) {
 		origName := strings.TrimSuffix(strings.TrimPrefix(fp, rootDir), ".md")
 		doc, _ := ReadJson(fp)
 		var addHeadings func(n Node) error
@@ -51,16 +46,13 @@ func CrosscheckSuperlinks(rootDir string) error {
 			}
 			return nil
 		}
-		err = addHeadings(doc)
-		return err
-	}
-	filepath.WalkDir(rootDir, visitHeadings)
-
-	var validateAndRewriteAnchors = func(fp string, fi os.DirEntry, err error) error {
-		if fi.IsDir() {
-			return nil
+		err := addHeadings(doc)
+		if err != nil {
+			return err
 		}
+	}
 
+	for _, fp := range ListAllMd(rootDir) {
 		dirty := false
 		doc, _ := ReadJson(fp)
 		origName := strings.TrimSuffix(strings.TrimPrefix(fp, rootDir), ".md")
@@ -73,12 +65,15 @@ func CrosscheckSuperlinks(rootDir string) error {
 				if ok1 && ok2 && tag == "link" {
 					n.Type = Link
 					delete(n.Attributes, "tag")
-					if location, ok := headings[anchor]; ok {
+					location, ok := headings[anchor]
+					if ok {
 						rel := calculateRelativeLocation(origName, location)
 						if rel != "" {
 							n.Attributes["href"] = rel
 							dirty = true
 						}
+					} else {
+						return errors.New(fmt.Sprintf("Anchor %s in file %s not found in project", anchor, fp))
 					}
 				}
 			}
@@ -92,12 +87,16 @@ func CrosscheckSuperlinks(rootDir string) error {
 			}
 			return nil
 		}
-		err = checkAnchors(&doc)
-		if dirty {
-			WriteJson(&doc, fp)
+		err := checkAnchors(&doc)
+		if err != nil {
+			return err
 		}
-		return err
+		if dirty {
+			err = WriteJson(&doc, fp)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	err := filepath.WalkDir(rootDir, validateAndRewriteAnchors)
-	return err
+	return nil
 }
