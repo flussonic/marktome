@@ -147,9 +147,11 @@ func writeCode(n *Node) []byte {
 func writeImage(n *Node) []byte {
 	var text bytes.Buffer
 	src, _ := n.Attributes["src"]
-	title, _ := n.Attributes["title"]
+	title, ok_title := n.Attributes["title"]
 	text.WriteString("![")
-	text.WriteString(title)
+	if ok_title {
+		text.WriteString(title)
+	}
 	text.WriteString("](")
 	text.WriteString(src)
 	text.WriteString(")")

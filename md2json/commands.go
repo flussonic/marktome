@@ -9,6 +9,19 @@ import (
 	"strings"
 )
 
+type CommandFunction func([]string) error
+
+var Commands = map[string]CommandFunction{
+	"md2json":        Commmand_md2json,
+	"planarize":      Command_planarize,
+	"superlinks":     Command_superlinks,
+	"snippets":       Command_snippets,
+	"graphviz":       Command_graphviz,
+	"macros":         Command_macros,
+	"foliant2mkdocs": Commmand_foliant2mkdocs,
+	"json2md":        Command_json2md,
+}
+
 func Commmand_md2json(args []string) error {
 	if len(args) < 2 {
 		return errors.New(fmt.Sprintf("usage: md2json input_dir output_dir"))
@@ -97,4 +110,11 @@ func Command_macros(args []string) error {
 		}
 	}
 	return SubstituteMacros(rootDir, macros)
+}
+
+func Command_graphviz(args []string) error {
+	if len(args) < 2 {
+		return errors.New(fmt.Sprintf("usage: grapviz srcDir imageDir"))
+	}
+	return Graphviz(args[0], args[1])
 }

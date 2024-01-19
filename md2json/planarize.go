@@ -24,10 +24,15 @@ func Planarize(rootDir string) error {
 		if doc.Attributes == nil {
 			doc.Attributes = map[string]string{}
 		}
-		doc.Attributes["original"] = strings.TrimSuffix(strings.TrimPrefix(fp, rootDir+"/"), ".md")
+		original := strings.TrimSuffix(strings.TrimPrefix(fp, rootDir+"/"), ".md")
+		if original == "index" {
+			continue
+		}
+		doc.Attributes["original"] = original
 		doc.Attributes["title"] = heading
 
 		output := fmt.Sprintf("%s/%s.md", rootDir, id)
+
 		os.MkdirAll(filepath.Dir(output), os.ModePerm)
 		err = WriteJson(&doc, output)
 		if err != nil {

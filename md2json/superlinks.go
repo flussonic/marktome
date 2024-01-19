@@ -29,6 +29,9 @@ func CrosscheckSuperlinks(rootDir string) error {
 			if n.Type == Heading && n.Attributes != nil {
 				val, ok := n.Attributes["id"]
 				if ok {
+					if Slugify(strings.ToLower(n.Literal)) == val {
+						return errors.New(fmt.Sprintf("Foliant disallow same name for heading and anchor: %s %s", val, origName))
+					}
 					old, ok2 := headings[val]
 					if ok2 {
 						return errors.New(fmt.Sprintf("Heading %s double declared in %s and %s\n", val, origName, old))
