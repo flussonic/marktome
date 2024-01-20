@@ -184,7 +184,8 @@ func (st *InlineParserState) parseHtml() {
 	}
 	tagName := st.consumeN(nameEnd)
 	attrs := map[string]string{}
-	attrs["tag"] = string(tagName)
+	tag := string(tagName)
+	attrs["tag"] = tag
 
 	tagEnd = bytes.Index(st.source, []byte{'>'})
 	if tagEnd < 0 {
@@ -225,7 +226,14 @@ func (st *InlineParserState) parseHtml() {
 	node := Node{
 		Type:       HTML,
 		Attributes: attrs,
-		Literal:    text,
+	}
+	if tag == "if" {
+		node.Children = parseText([]byte(text))
+	} else if tag == "details" {
+		doc := MarkdownParse([]byte(text))
+		node.Children = doc.Children
+	} else {
+		node.Literal = text
 	}
 	st.children = append(st.children, node)
 }
@@ -373,7 +381,7 @@ func parseCodeFence(st *ParserState) Node {
 			break
 		}
 	}
-	l := len(s1) - len(st.source)
+	l := len(s1) - len(st.source) - 4
 	block := s1[:l]
 	node := Node{
 		Type:       CodeFence,

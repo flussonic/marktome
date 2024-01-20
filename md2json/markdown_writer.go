@@ -106,13 +106,19 @@ func writeHeading(n *Node) []byte {
 	return text.Bytes()
 }
 
-func writeParagraph(n *Node) []byte {
+func writeChildren(n *Node) []byte {
 	var text bytes.Buffer
 	if n.Children != nil {
 		for _, ch := range n.Children {
 			text.Write(writeNode(&ch))
 		}
 	}
+	return text.Bytes()
+}
+
+func writeParagraph(n *Node) []byte {
+	var text bytes.Buffer
+	text.Write(writeChildren(n))
 	text.WriteString("\n\n")
 	return text.Bytes()
 }
@@ -147,11 +153,8 @@ func writeCode(n *Node) []byte {
 func writeImage(n *Node) []byte {
 	var text bytes.Buffer
 	src, _ := n.Attributes["src"]
-	title, ok_title := n.Attributes["title"]
 	text.WriteString("![")
-	if ok_title {
-		text.WriteString(title)
-	}
+	text.WriteString(n.Literal)
 	text.WriteString("](")
 	text.WriteString(src)
 	text.WriteString(")")
@@ -184,11 +187,7 @@ func writeCodeFence(n *Node) []byte {
 
 func writeList(n *Node) []byte {
 	var text bytes.Buffer
-	if n.Children != nil {
-		for _, ch := range n.Children {
-			text.Write(writeNode(&ch))
-		}
-	}
+	text.Write(writeChildren(n))
 	text.WriteString("\n")
 	return text.Bytes()
 }
@@ -196,11 +195,7 @@ func writeList(n *Node) []byte {
 func writeListItem(n *Node) []byte {
 	var text bytes.Buffer
 	text.WriteString("* ")
-	if n.Children != nil {
-		for _, ch := range n.Children {
-			text.Write(writeNode(&ch))
-		}
-	}
+	text.Write(writeChildren(n))
 	text.WriteString("\n")
 	return text.Bytes()
 }
@@ -218,11 +213,20 @@ func writeAdmonition(n *Node) []byte {
 func writeHTML(n *Node) []byte {
 	var text bytes.Buffer
 	tag, _ := n.Attributes["tag"]
+	if tag == "if" {
+		text.Write(writeChildren(n))
+		text.WriteString("\n\n")
+		return text.Bytes()
+	}
 	text.WriteString("<")
 	text.WriteString(tag)
-	if len(n.Literal) > 0 {
+	if len(n.Literal) > 0 || (n.Children != nil && len(n.Children) > 0) {
 		text.WriteString(">")
-		text.WriteString(n.Literal)
+		if n.Children == nil {
+			text.WriteString(n.Literal)
+		} else {
+			text.Write(writeChildren(n))
+		}
 		text.WriteString("</")
 		text.WriteString(tag)
 		text.WriteString(">")
