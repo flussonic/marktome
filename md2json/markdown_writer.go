@@ -119,7 +119,7 @@ func writeChildren(n *Node) []byte {
 func writeParagraph(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeChildren(n))
-	text.WriteString("\n\n")
+	text.WriteString("\n")
 	return text.Bytes()
 }
 
@@ -127,17 +127,25 @@ func writeText(n *Node) []byte {
 	return []byte(n.Literal)
 }
 
+func writeInliner(n *Node) []byte {
+	if n.Children == nil {
+		return []byte(n.Literal)
+	} else {
+		return writeChildren(n)
+	}
+}
+
 func writeEmphasis(n *Node) []byte {
 	var text bytes.Buffer
 	text.WriteString("*")
-	text.WriteString(n.Literal)
+	text.Write(writeInliner(n))
 	text.WriteString("*")
 	return text.Bytes()
 }
 func writeBold(n *Node) []byte {
 	var text bytes.Buffer
 	text.WriteString("**")
-	text.WriteString(n.Literal)
+	text.Write(writeInliner(n))
 	text.WriteString("**")
 	return text.Bytes()
 }
@@ -179,7 +187,14 @@ func writeLink(n *Node) []byte {
 
 func writeCodeFence(n *Node) []byte {
 	var text bytes.Buffer
-	text.WriteString("```\n")
+	text.WriteString("```")
+	if n.Attributes != nil {
+		lang, ok := n.Attributes["lang"]
+		if ok {
+			text.WriteString(lang)
+		}
+	}
+	text.WriteString("\n")
 	text.WriteString(n.Literal)
 	text.WriteString("```\n\n")
 	return text.Bytes()
@@ -212,16 +227,32 @@ func writeAdmonition(n *Node) []byte {
 
 func writeHTML(n *Node) []byte {
 	var text bytes.Buffer
+	block := false
 	tag, _ := n.Attributes["tag"]
 	if tag == "if" {
 		text.Write(writeChildren(n))
 		text.WriteString("\n\n")
 		return text.Bytes()
 	}
+	if tag == "snippet" {
+		block = true
+	}
 	text.WriteString("<")
 	text.WriteString(tag)
+	for k, v := range n.Attributes {
+		if k != "tag" {
+			text.WriteString(" ")
+			text.WriteString(k)
+			text.WriteString("=\"")
+			text.WriteString(v)
+			text.WriteString("\"")
+		}
+	}
 	if len(n.Literal) > 0 || (n.Children != nil && len(n.Children) > 0) {
 		text.WriteString(">")
+		if block {
+			text.WriteString("\n")
+		}
 		if n.Children == nil {
 			text.WriteString(n.Literal)
 		} else {
@@ -232,6 +263,9 @@ func writeHTML(n *Node) []byte {
 		text.WriteString(">")
 	} else {
 		text.WriteString("/>")
+	}
+	if block {
+		text.WriteString("\n")
 	}
 	return text.Bytes()
 }

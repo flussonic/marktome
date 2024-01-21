@@ -20,6 +20,7 @@ var Commands = map[string]CommandFunction{
 	"macros":         Command_macros,
 	"foliant2mkdocs": Commmand_foliant2mkdocs,
 	"json2md":        Command_json2md,
+	"lint":           Command_lint,
 }
 
 func Commmand_md2json(args []string) error {
@@ -28,6 +29,15 @@ func Commmand_md2json(args []string) error {
 	}
 	rootDir := args[0]
 	outDir := args[1]
+	st, err := os.Stat(rootDir)
+	if err != nil {
+		return err
+	}
+	if !st.IsDir() {
+		os.MkdirAll(filepath.Dir(outDir), os.ModePerm)
+		err := Md2Json(rootDir, outDir)
+		return err
+	}
 	paths := ListAllMd(rootDir)
 	for _, fp := range paths {
 		output := outDir + "/" + strings.TrimPrefix(fp, rootDir)
@@ -117,4 +127,21 @@ func Command_graphviz(args []string) error {
 		return errors.New(fmt.Sprintf("usage: grapviz srcDir imageDir"))
 	}
 	return Graphviz(args[0], args[1])
+}
+
+func Command_lint(args []string) error {
+	if len(args) < 1 {
+		return errors.New(fmt.Sprintf("usage: lint file.md"))
+	}
+	f, err := os.CreateTemp("/tmp", "md2json-")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	err = Md2Json(args[0], f.Name())
+	if err != nil {
+		return err
+	}
+	err = Json2Md(f.Name(), args[0])
+	return err
 }

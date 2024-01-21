@@ -118,7 +118,7 @@ type InlineParserState struct {
 }
 
 func (st *InlineParserState) flushText() {
-	if st.pos > 1 {
+	if st.pos > 0 {
 		node := Node{Type: Text, Literal: string(st.source[0:st.pos])}
 		st.children = append(st.children, node)
 		if st.pos < len(st.source) {
@@ -156,7 +156,14 @@ func (st *InlineParserState) parseInliner(symbol []byte, typ Kind) {
 	st.consumeN(len(symbol))
 	i := bytes.Index(st.source, symbol)
 	if i > 0 {
-		st.children = append(st.children, Node{Type: typ, Literal: string(st.consumeN(i))})
+		node := Node{Type: typ}
+		children := parseText(st.consumeN(i))
+		if len(children) == 1 && children[0].Type == Text {
+			node.Literal = children[0].Literal
+		} else {
+			node.Children = children
+		}
+		st.children = append(st.children, node)
 		st.consumeN(len(symbol))
 	}
 }
