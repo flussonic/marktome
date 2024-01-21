@@ -119,7 +119,7 @@ func writeChildren(n *Node) []byte {
 func writeParagraph(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeChildren(n))
-	text.WriteString("\n")
+	text.WriteString("\n\n")
 	return text.Bytes()
 }
 

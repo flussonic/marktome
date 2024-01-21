@@ -90,19 +90,11 @@ func parseDocument(st *ParserState) Node {
 
 func parseParagraph(st *ParserState) Node {
 	s1 := st.source
-	// fmt.Printf("Go into paragraph: '%s'\n", s1[:20])
-	for !st.eof() && !st.startsWith("\n") && !st.startsWith("<") && !st.startsWith("```") {
+	for !st.eof() && !st.startsWith("\n") {
 		st.consumeLine()
-		// fmt.Printf("Consume line '%s'\n", s)
 	}
-	// for !st.eof() && (st.source[0] == ' ' || st.source[0] == '\t') {
-	// 	fmt.Printf("Consume char %d\n", st.source[0])
-	// 	st.consumeN(1)
-	// }
 	l := len(s1) - len(st.source)
-	// fmt.Printf("Paragraph is %d bytes. Flags: %b/%b/%b/%b\n", l,
-	// 	st.eof(), st.startsWith("\n"), st.startsWith("<"), st.startsWith("```"))
-	block := s1[:l]
+	block := bytes.TrimSuffix(s1[:l], []byte{'\n'})
 	node := Node{
 		Type:       Paragraph,
 		Attributes: map[string]string{},
@@ -113,49 +105,42 @@ func parseParagraph(st *ParserState) Node {
 
 type InlineParserState struct {
 	source   []byte
-	pos      int
 	children []Node
+	text     []byte
 }
 
 func (st *InlineParserState) flushText() {
-	if st.pos > 0 {
-		node := Node{Type: Text, Literal: string(st.source[0:st.pos])}
+	if len(st.text) > 0 {
+		node := Node{Type: Text, Literal: string(st.text)}
 		st.children = append(st.children, node)
-		if st.pos < len(st.source) {
-			st.source = st.source[st.pos:]
-		} else {
-			st.source = []byte{}
-		}
-		st.pos = 0
+		st.text = []byte{}
 	}
 }
 
 func (st *InlineParserState) consumeN(n int) []byte {
-	if st.pos+n > len(st.source) {
-		n = len(st.source) - st.pos
+	if n > len(st.source) {
+		n = len(st.source)
 	}
-	st.pos += n
-	s := st.source[0:st.pos]
-	st.source = st.source[st.pos:]
-	st.pos = 0
+	s := st.source[:n]
+	st.source = st.source[n:]
 	return s
 }
 
 func (st *InlineParserState) startsWith(s []byte) bool {
-	if st.pos+len(s) >= len(st.source) {
+	if len(s) >= len(st.source) {
 		return false
 	}
-	return bytes.Equal(s, st.source[st.pos:st.pos+len(s)])
+	return bytes.Equal(s, st.source[:len(s)])
 }
 
 func (st *InlineParserState) parseInliner(symbol []byte, typ Kind) {
 	if !st.startsWith(symbol) {
 		return
 	}
-	st.flushText()
-	st.consumeN(len(symbol))
-	i := bytes.Index(st.source, symbol)
+	i := bytes.Index(st.source[len(symbol):], symbol)
 	if i > 0 {
+		st.flushText()
+		st.consumeN(len(symbol))
 		node := Node{Type: typ}
 		children := parseText(st.consumeN(i))
 		if len(children) == 1 && children[0].Type == Text {
@@ -177,12 +162,10 @@ func (st *InlineParserState) parseHtml() {
 	if !st.startsWith([]byte{'<'}) {
 		return
 	}
-	// fmt.Printf("Reading html from %d '%s'\n", st.pos, string(st.source[st.pos:]))
 	st.flushText()
 	st.consumeN(1)
 	tagEnd := bytes.Index(st.source, []byte{'>'})
 	if tagEnd < 0 {
-		// fmt.Printf("No closing tag for '%s'", string(st.source))
 		return
 	}
 	nameEnd := bytes.Index(st.source[:tagEnd], []byte{' '})
@@ -271,13 +254,15 @@ func (st *InlineParserState) readLink() (Node, bool) {
 }
 
 func (st *InlineParserState) parseLink() {
-	start := st.pos
-	if !st.startsWith([]byte{'['}) || len(st.source)-start < 4 {
+	if !st.startsWith([]byte{'['}) || len(st.source) < 4 {
 		return
 	}
-	titleEnd := bytes.Index(st.source[start:], []byte{']', '('})
-	urlEnd := bytes.Index(st.source[start+titleEnd:], []byte{')'})
-	if titleEnd < 0 || urlEnd < 0 {
+	titleEnd := bytes.Index(st.source, []byte{']', '('})
+	if titleEnd < 0 {
+		return
+	}
+	urlEnd := bytes.Index(st.source[titleEnd:], []byte{')'})
+	if urlEnd < 0 {
 		return
 	}
 	st.flushText()
@@ -293,12 +278,11 @@ func (st *InlineParserState) parseLink() {
 }
 
 func (st *InlineParserState) parseImage() {
-	start := st.pos
-	if !st.startsWith([]byte{'!', '['}) || len(st.source)-start < 5 {
+	if !st.startsWith([]byte{'!', '['}) || len(st.source) < 5 {
 		return
 	}
-	titleEnd := bytes.Index(st.source[start:], []byte{']', '('})
-	urlEnd := bytes.Index(st.source[start+titleEnd:], []byte{')'})
+	titleEnd := bytes.Index(st.source, []byte{']', '('})
+	urlEnd := bytes.Index(st.source[titleEnd:], []byte{')'})
 	if titleEnd < 0 || urlEnd < 0 {
 		return
 	}
@@ -318,15 +302,20 @@ func parseText(source []byte) []Node {
 	st := InlineParserState{
 		source:   source,
 		children: []Node{},
-		pos:      0,
+		text:     []byte{},
 	}
-	for ; st.pos < len(st.source); st.pos++ {
+	for len(st.source) > 0 {
+		l1 := len(st.source)
 		st.parseInliner([]byte{'`'}, Code)
 		st.parseInliner([]byte{'*', '*'}, Bold)
 		st.parseInliner([]byte{'*'}, Emphasis)
 		st.parseLink()
 		st.parseImage()
 		st.parseHtml()
+		if l1 == len(st.source) {
+			st.text = append(st.text, st.source[0])
+			st.source = st.source[1:]
+		}
 	}
 	st.flushText()
 	return st.children
@@ -336,7 +325,7 @@ func parseBlockHTML(st *ParserState) Node {
 	st1 := InlineParserState{
 		source:   st.source,
 		children: []Node{},
-		pos:      0,
+		text:     []byte{},
 	}
 	st1.parseHtml()
 	if len(st1.children) > 0 {
@@ -346,37 +335,6 @@ func parseBlockHTML(st *ParserState) Node {
 	line := st.consumeLine()
 	return Node{Type: Text, Literal: string(line)}
 }
-
-// func parseSnippet(st *ParserState) Node {
-// 	st.consumeN(len("<snippet "))
-// 	tagEnd := bytes.Index(st.source, []byte{'>'})
-// 	tagAttrs := st.consumeN(tagEnd)
-// 	st.consumeN(1)
-// 	if st.startsWith("\n") {
-// 		st.consumeN(1)
-// 	}
-// 	s1 := st.source
-// 	closing := "</snippet>"
-// 	contentEnd := bytes.Index(st.source, []byte(closing))
-// 	if contentEnd < 0 {
-// 		contentEnd = len(st.source)
-// 	}
-// 	st.consumeN(contentEnd + len(closing))
-// 	if st.startsWith("\n") {
-// 		st.consumeN(1)
-// 	}
-// 	node := Node{
-// 		Type:       Snippet,
-// 		Attributes: map[string]string{},
-// 		Literal:    string(s1[:contentEnd]),
-// 	}
-
-// 	attrMatches := tagAttrsRegexp.FindAllSubmatch(tagAttrs, -1)
-// 	for i := range attrMatches {
-// 		node.Attributes[string(attrMatches[i][1])] = string(attrMatches[i][2])
-// 	}
-// 	return node
-// }
 
 func parseCodeFence(st *ParserState) Node {
 	st.consumeN(len("```"))
@@ -460,10 +418,6 @@ func parseList(st *ParserState, symbol []byte) Node {
 			Children: text,
 		}
 		node.Children = append(node.Children, li)
-		// Обрабатываем лишний перенос строк между элементами списка
-		if st.startsWith("\n" + string(symbol)) {
-			st.consumeN(1)
-		}
 	}
 	return node
 }
@@ -471,8 +425,6 @@ func parseList(st *ParserState, symbol []byte) Node {
 func parseAdmonition(st *ParserState) Node {
 	st.consumeN(len("!!! "))
 	level := string(st.consumeLine())
-	// for ; st.startsWith(" "); st.consumeN(1) {
-	// }
 	child := parseParagraph(st)
 	node := Node{
 		Type:       Admonition,
