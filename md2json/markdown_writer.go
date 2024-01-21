@@ -22,6 +22,7 @@ func writeDocument(n *Node) []byte {
 	text.Write(writeDocumentMeta(n))
 	if n.Children != nil {
 		for _, ch := range n.Children {
+			text.WriteByte('\n')
 			text.Write(writeNode(&ch))
 		}
 	}
@@ -40,7 +41,7 @@ func writeDocumentMeta(n *Node) []byte {
 		header.WriteString(v)
 		header.WriteString("\n")
 	}
-	header.WriteString("---\n\n")
+	header.WriteString("---\n")
 	return header.Bytes()
 }
 
@@ -102,7 +103,7 @@ func writeHeading(n *Node) []byte {
 		text.WriteString(id)
 		text.WriteString("}")
 	}
-	text.WriteString("\n\n")
+	text.WriteString("\n")
 	return text.Bytes()
 }
 
@@ -119,7 +120,7 @@ func writeChildren(n *Node) []byte {
 func writeParagraph(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeChildren(n))
-	text.WriteString("\n\n")
+	text.WriteString("\n")
 	return text.Bytes()
 }
 
@@ -196,14 +197,13 @@ func writeCodeFence(n *Node) []byte {
 	}
 	text.WriteString("\n")
 	text.WriteString(n.Literal)
-	text.WriteString("```\n\n")
+	text.WriteString("```\n")
 	return text.Bytes()
 }
 
 func writeList(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeChildren(n))
-	text.WriteString("\n")
 	return text.Bytes()
 }
 
@@ -221,7 +221,13 @@ func writeAdmonition(n *Node) []byte {
 	text.WriteString("!!! ")
 	text.WriteString(level)
 	text.WriteString("\n")
-	text.Write(writeParagraph(n))
+	inner := writeChildren(n)
+	rows := bytes.Split(inner, []byte{'\n'})
+	for _, r := range rows {
+		text.WriteString("    ")
+		text.Write(r)
+		text.WriteByte('\n')
+	}
 	return text.Bytes()
 }
 

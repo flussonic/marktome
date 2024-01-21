@@ -425,11 +425,22 @@ func parseList(st *ParserState, symbol []byte) Node {
 func parseAdmonition(st *ParserState) Node {
 	st.consumeN(len("!!! "))
 	level := string(st.consumeLine())
-	child := parseParagraph(st)
+	starter := "    "
+	var text bytes.Buffer
+	first := true
+	for st.startsWith(starter) {
+		line := st.consumeLine()[len(starter):]
+		if !first {
+			text.WriteString("\n")
+		}
+		text.Write(line)
+		first = false
+	}
+	children := parseText(text.Bytes())
 	node := Node{
 		Type:       Admonition,
 		Attributes: map[string]string{"level": level},
-		Children:   []Node{child},
+		Children:   children,
 	}
 	return node
 }
