@@ -53,7 +53,7 @@ func parseDocument(st *ParserState) Node {
 			continue
 		}
 
-		if st.startsWith("<") {
+		if st.startsWith("<") && !st.startsWith("<link ") {
 			node.Children = append(node.Children, parseBlockHTML(st))
 			continue
 		}
@@ -83,7 +83,10 @@ func parseDocument(st *ParserState) Node {
 			continue
 		}
 
-		node.Children = append(node.Children, parseParagraph(st))
+		n := parseParagraph(st)
+		if len(n.Literal) > 0 || (n.Children != nil && len(n.Children) > 0) {
+			node.Children = append(node.Children, n)
+		}
 	}
 	return node
 }
@@ -131,6 +134,25 @@ func (st *InlineParserState) startsWith(s []byte) bool {
 		return false
 	}
 	return bytes.Equal(s, st.source[:len(s)])
+}
+
+func (st *InlineParserState) parseCode() {
+	if !st.startsWith([]byte{'`'}) {
+		return
+	}
+	i := bytes.Index(st.source[1:], []byte{'`'})
+	if i < 0 {
+		return
+	}
+	st.flushText()
+	st.consumeN(1)
+	text := st.consumeN(i)
+	st.consumeN(1)
+	node := Node{
+		Type:    Code,
+		Literal: string(text),
+	}
+	st.children = append(st.children, node)
 }
 
 func (st *InlineParserState) parseInliner(symbol []byte, typ Kind) {
@@ -306,7 +328,7 @@ func parseText(source []byte) []Node {
 	}
 	for len(st.source) > 0 {
 		l1 := len(st.source)
-		st.parseInliner([]byte{'`'}, Code)
+		st.parseCode()
 		st.parseInliner([]byte{'*', '*'}, Bold)
 		st.parseInliner([]byte{'*'}, Emphasis)
 		st.parseLink()

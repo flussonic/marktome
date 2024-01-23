@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -22,7 +23,12 @@ func writeDocument(n *Node) []byte {
 	text.Write(writeDocumentMeta(n))
 	if n.Children != nil {
 		for _, ch := range n.Children {
-			text.WriteByte('\n')
+			if len(text.Bytes()) > 0 {
+				if !bytes.HasSuffix(text.Bytes(), []byte{'\n'}) {
+					text.WriteByte('\n')
+				}
+				text.WriteByte('\n')
+			}
 			text.Write(writeNode(&ch))
 		}
 	}
@@ -35,7 +41,13 @@ func writeDocumentMeta(n *Node) []byte {
 	}
 	var header bytes.Buffer
 	header.WriteString("---\n")
-	for k, v := range n.Attributes {
+	keys := make([]string, 0, len(n.Attributes))
+	for k := range n.Attributes {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v, _ := n.Attributes[k]
 		header.WriteString(k)
 		header.WriteString(": ")
 		header.WriteString(v)
@@ -240,7 +252,11 @@ func writeHTML(n *Node) []byte {
 		text.WriteString("\n\n")
 		return text.Bytes()
 	}
-	if tag == "snippet" {
+	switch tag {
+	case
+		"graphviz",
+		"snippet",
+		"include-snippet":
 		block = true
 	}
 	text.WriteString("<")
