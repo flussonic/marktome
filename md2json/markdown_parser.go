@@ -178,6 +178,17 @@ func (st *InlineParserState) parseInliner(symbol []byte, typ Kind) {
 var tagAttrsRegexp = regexp.MustCompile(`([a-z]+)="([^"]+)"`) //nolint:golint,lll
 
 func (st *InlineParserState) parseHtml() {
+	br := "<br>"
+	if st.startsWith([]byte(br)) {
+		st.flushText()
+		st.consumeN(len(br))
+		node := Node{
+			Type:       HTML,
+			Attributes: map[string]string{"tag": "br"},
+		}
+		st.children = append(st.children, node)
+		return
+	}
 	if st.startsWith([]byte{'<', '/'}) {
 		return
 	}

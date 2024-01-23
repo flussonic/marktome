@@ -261,6 +261,10 @@ func writeHTML(n *Node) []byte {
 	}
 	text.WriteString("<")
 	text.WriteString(tag)
+	if tag == "br" {
+		text.WriteString(">")
+		return text.Bytes()
+	}
 	for k, v := range n.Attributes {
 		if k != "tag" {
 			text.WriteString(" ")
