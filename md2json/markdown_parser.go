@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func MarkdownParse(source []byte) Node {
@@ -457,7 +458,7 @@ func parseList(st *ParserState, symbol []byte) Node {
 
 func parseAdmonition(st *ParserState) Node {
 	st.consumeN(len("!!! "))
-	level := string(st.consumeLine())
+	level := strings.TrimSpace(string(st.consumeLine()))
 	starter := "    "
 	var text bytes.Buffer
 	first := true

@@ -203,7 +203,7 @@ func writeCodeFence(n *Node) []byte {
 	text.WriteString("```")
 	if n.Attributes != nil {
 		lang, ok := n.Attributes["lang"]
-		if ok {
+		if !ok {
 			text.WriteString(lang)
 		}
 	}
