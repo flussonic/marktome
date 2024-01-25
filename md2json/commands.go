@@ -21,6 +21,7 @@ var Commands = map[string]CommandFunction{
 	"foliant2mkdocs": Commmand_foliant2mkdocs,
 	"json2md":        Command_json2md,
 	"lint":           Command_lint,
+	"json2latex":     Command_json2latex,
 }
 
 func Commmand_md2json(args []string) error {
@@ -143,5 +144,22 @@ func Command_lint(args []string) error {
 		return err
 	}
 	err = Json2Md(f.Name(), args[0])
+	return err
+}
+
+func Command_json2latex(args []string) error {
+	if len(args) < 2 {
+		return errors.New(fmt.Sprintf("usage: json2latex input_dir output.tex"))
+	}
+
+	doc, err := MergeDocument(args[0])
+	if err != nil {
+		return err
+	}
+	tex, err := Latex(doc)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(args[1], tex, os.ModePerm)
 	return err
 }

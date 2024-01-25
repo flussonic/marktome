@@ -1,0 +1,15 @@
+FROM ubuntu:22.04
+
+RUN apt update && \
+  DEBIAN_FRONTEND=noninteractive apt install -y \
+  wget \
+  texlive-full \
+  biber \
+  latexmk \
+  make
+RUN DEBIAN_FRONTEND=noninteractive apt install -y \
+  python3 \
+  python3-pip \
+&& pip3 install pygments 
+
+ADD pdf.sh /usr/local/bin/
