@@ -60,5 +60,5 @@ all:
 pdf:
 	go build
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
-	./foli2 json2latex stage-planar/en/media-server-quickstart.md stage-out/en/doc/content.tex
+	./foli2 json2latex stage-planar/en/transcoder-internals.md stage-out/en/doc/content.tex
 	docker run -i --rm -w /data -v `pwd`/stage-out/en/doc:/data latex pdf.sh

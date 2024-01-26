@@ -141,12 +141,14 @@ func writeTexNode(n *Node) []byte {
 		return writeTexAdmonition(n)
 	case CodeFence:
 		return writeTexCodeFence(n)
+	case Table:
+		return writeTexTable(n)
 	// case HTML:
 	// 	return writeHTML(n)
 	default:
 		if n.Attributes != nil {
 			tag, _ := n.Attributes["tag"]
-			if tag == "if" {
+			if tag == "if" || tag == "br" {
 				return []byte{}
 			}
 		}
@@ -334,5 +336,38 @@ func writeTexAdmonition(n *Node) []byte {
 	text.WriteString("\n\\end{")
 	text.WriteString(level)
 	text.WriteString("}\n\n")
+	return text.Bytes()
+}
+
+func writeTexTable(n *Node) []byte {
+	var text bytes.Buffer
+	header := n.Children[0]
+	body := n.Children[1]
+	text.WriteString("\\begin{tabular}{")
+	var h bytes.Buffer
+	for i, th := range header.Children {
+		if i > 0 {
+			text.WriteString("|")
+			h.WriteString(" & ")
+		}
+		text.WriteString("c")
+		h.WriteString("\\textbf{")
+		h.WriteString(th.Literal)
+		h.WriteString("}")
+	}
+	text.WriteString("}\n")
+	h.WriteString("\\\\\n")
+	text.Write(h.Bytes())
+	text.WriteString("\\hline\n")
+	for _, row := range body.Children {
+		for i, cell := range row.Children {
+			if i > 0 {
+				text.WriteString(" & ")
+			}
+			text.Write(writeTexChildren(&cell))
+		}
+		text.WriteString("\\\\\n")
+	}
+	text.WriteString("\\end{tabular}\n\n")
 	return text.Bytes()
 }
