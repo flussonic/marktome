@@ -44,12 +44,18 @@ func TestMarkdownParse(t *testing.T) {
 			expected := string(expected_)
 
 			result := md2json.MarkdownParse(tt.input)
-			outText_, _ := json.Marshal(result)
-			outText := string(outText_)
+			outJson_, _ := json.Marshal(result)
+			outJson := string(outJson_)
 
-			if outText != expected {
-				t.Errorf("Parse()\nactual\n%s\nexpected\n%s", outText, expected)
+			if outJson != expected {
+				t.Errorf("Parse()\nactual\n%s\nexpected\n%s", outJson, expected)
 			}
+
+			outMd := md2json.WriteDocument(&doc)
+			if string(outMd) != string(tt.input) {
+				t.Errorf("WriteMd()\nactual\n%s\nexpected\n%s", outMd, tt.input)
+			}
+
 		})
 	}
 

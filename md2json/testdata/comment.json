@@ -11,6 +11,10 @@
       ]
     },
     {
+      "type": "Comment",
+      "text": " this is a comment *emph* `code`\n\n"
+    },
+    {
       "type": "Paragraph",
       "children": [
         {

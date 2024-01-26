@@ -5,6 +5,7 @@ type AttributeMap map[string]string
 
 const (
 	Document   Kind = "Document"
+	Comment    Kind = "Comment"
 	Paragraph  Kind = "Paragraph"
 	Text       Kind = "Text"
 	Image      Kind = "Image"

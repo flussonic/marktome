@@ -45,7 +45,7 @@ func parseDocument(st *ParserState) Node {
 			break
 		}
 
-		skipComment(st)
+		parseComment(st, &node)
 		parseBlockHTML(st, &node)
 		parseHeading(st, &node)
 		parseList(st, &node)
@@ -371,12 +371,19 @@ func parseText(source []byte) []Node {
 	return st.children
 }
 
-func skipComment(st *ParserState) bool {
-	if st.startsWith("<!--") {
-		closing := "-->"
-		i := bytes.Index(st.source, []byte(closing))
-		st.consumeN(i + len(closing))
-		return true
+func parseComment(st *ParserState, node *Node) bool {
+	opening := "<!--"
+	closing := "-->"
+	if st.startsWith(opening) {
+		i := bytes.Index(st.source[len(opening):], []byte(closing))
+		if i >= 0 {
+			st.consumeN(len(opening))
+			text := st.consumeN(i)
+			st.consumeN(len(closing))
+			node.Children = append(node.Children, Node{Type: Comment, Literal: string(text)})
+			return true
+		}
+		return false
 	}
 	return false
 }

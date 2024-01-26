@@ -13,12 +13,12 @@ func Json2Md(input string, output string) error {
 	if err != nil {
 		return err
 	}
-	text := writeDocument(&doc)
+	text := WriteDocument(&doc)
 	err = os.WriteFile(output, text, os.ModePerm)
 	return err
 }
 
-func writeDocument(n *Node) []byte {
+func WriteDocument(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeDocumentMeta(n))
 	if n.Children != nil {
@@ -63,6 +63,8 @@ func writeNode(n *Node) []byte {
 		return writeParagraph(n)
 	case Text:
 		return writeText(n)
+	case Comment:
+		return writeComment(n)
 	case Image:
 		return writeImage(n)
 	case Link:
@@ -85,6 +87,8 @@ func writeNode(n *Node) []byte {
 		return writeCodeFence(n)
 	case HTML:
 		return writeHTML(n)
+	case Table:
+		return writeTable(n)
 	default:
 		fmt.Println("Type", n.Type)
 	}
@@ -138,6 +142,14 @@ func writeParagraph(n *Node) []byte {
 
 func writeText(n *Node) []byte {
 	return []byte(n.Literal)
+}
+
+func writeComment(n *Node) []byte {
+	var text bytes.Buffer
+	text.WriteString("<!--")
+	text.WriteString(n.Literal)
+	text.WriteString("-->")
+	return text.Bytes()
 }
 
 func writeInliner(n *Node) []byte {
@@ -203,7 +215,7 @@ func writeCodeFence(n *Node) []byte {
 	text.WriteString("```")
 	if n.Attributes != nil {
 		lang, ok := n.Attributes["lang"]
-		if !ok {
+		if ok {
 			text.WriteString(lang)
 		}
 	}
@@ -291,6 +303,35 @@ func writeHTML(n *Node) []byte {
 		text.WriteString("/>")
 	}
 	if block {
+		text.WriteString("\n")
+	}
+	return text.Bytes()
+}
+
+func writeTable(node *Node) []byte {
+	var text bytes.Buffer
+	header := node.Children[0]
+	body := node.Children[1]
+	text.WriteString("|")
+
+	var second bytes.Buffer
+	second.WriteString("|")
+	for _, h := range header.Children {
+		text.WriteString(" ")
+		text.Write(writeNode(&h))
+		text.WriteString(" |")
+		second.WriteString("---|")
+	}
+	text.WriteString("\n")
+	text.Write(second.Bytes())
+	text.WriteString("\n")
+	for _, row := range body.Children {
+		text.WriteString("|")
+		for _, cell := range row.Children {
+			text.WriteString(" ")
+			text.Write(writeChildren(&cell))
+			text.WriteString(" |")
+		}
 		text.WriteString("\n")
 	}
 	return text.Bytes()
