@@ -1,0 +1,8 @@
+{"type":"Document",
+"attributes": {
+    "key1": "value1",
+    "key2": "value2"
+},
+"children":[
+    {"type":"Paragraph","children":[{"type":"Text","text":"Hi"}]}
+]}

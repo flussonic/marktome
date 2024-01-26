@@ -55,54 +55,44 @@ func parseDocument(st *ParserState) Node {
 		}
 
 		if st.startsWith("<") && !st.startsWith("<link ") {
-			node.Children = append(node.Children, parseBlockHTML(st))
+			parseBlockHTML(&node, st)
 			continue
 		}
 
 		if st.startsWith("#") {
-			node.Children = append(node.Children, parseHeading(st))
+			parseHeading(&node, st)
 			continue
 		}
 
 		if st.startsWith("* ") {
-			node.Children = append(node.Children, parseList(st, []byte{'*', ' '}))
+			parseList(&node, st, []byte{'*', ' '})
 			continue
 		}
 
 		if st.startsWith("- ") {
-			node.Children = append(node.Children, parseList(st, []byte{'-', ' '}))
+			parseList(&node, st, []byte{'-', ' '})
 			continue
 		}
 
 		if st.startsWith("!!! ") {
-			node.Children = append(node.Children, parseAdmonition(st))
+			parseAdmonition(&node, st)
 			continue
 		}
 
 		if st.startsWith("```") {
-			node.Children = append(node.Children, parseCodeFence(st))
+			parseCodeFence(&node, st)
 			continue
 		}
+
+		// if st.startsWith("|") {
+		// 	node.Children = append(node.Children, parseTable(st))
+		// 	continue
+		// }
 
 		n := parseParagraph(st)
 		if len(n.Literal) > 0 || (n.Children != nil && len(n.Children) > 0) {
 			node.Children = append(node.Children, n)
 		}
-	}
-	return node
-}
-
-func parseParagraph(st *ParserState) Node {
-	s1 := st.source
-	for !st.eof() && !st.startsWith("\n") {
-		st.consumeLine()
-	}
-	l := len(s1) - len(st.source)
-	block := bytes.TrimSuffix(s1[:l], []byte{'\n'})
-	node := Node{
-		Type:       Paragraph,
-		Attributes: map[string]string{},
-		Children:   parseText(block),
 	}
 	return node
 }
@@ -332,6 +322,25 @@ func (st *InlineParserState) parseImage() {
 	st.children = append(st.children, node)
 }
 
+func parseParagraph(st *ParserState) Node {
+	s1 := st.source
+	for !st.eof() && !st.startsWith("\n") {
+		st.consumeLine()
+	}
+	l := len(s1) - len(st.source)
+	block := bytes.TrimSuffix(s1[:l], []byte{'\n'})
+	node := Node{
+		Type:       Paragraph,
+		Attributes: map[string]string{},
+		Children:   parseText(block),
+	}
+	return node
+}
+
+func parseTable(node *Node, st *ParserState) bool {
+	return false
+}
+
 func parseText(source []byte) []Node {
 	st := InlineParserState{
 		source:   source,
@@ -355,22 +364,26 @@ func parseText(source []byte) []Node {
 	return st.children
 }
 
-func parseBlockHTML(st *ParserState) Node {
+func parseBlockHTML(node *Node, st *ParserState) bool {
 	st1 := InlineParserState{
 		source:   st.source,
 		children: []Node{},
 		text:     []byte{},
 	}
 	st1.parseHtml()
+	n1 := Node{}
 	if len(st1.children) > 0 {
 		st.consumeN(len(st.source) - len(st1.source))
-		return st1.children[0]
+		n1 = st1.children[0]
+	} else {
+		line := st.consumeLine()
+		n1 = Node{Type: Text, Literal: string(line)}
 	}
-	line := st.consumeLine()
-	return Node{Type: Text, Literal: string(line)}
+	node.Children = append(node.Children, n1)
+	return true
 }
 
-func parseCodeFence(st *ParserState) Node {
+func parseCodeFence(node *Node, st *ParserState) bool {
 	st.consumeN(len("```"))
 	language := st.consumeLine()
 	s1 := st.source
@@ -382,18 +395,19 @@ func parseCodeFence(st *ParserState) Node {
 	}
 	l := len(s1) - len(st.source) - 4
 	block := s1[:l]
-	node := Node{
+	n1 := Node{
 		Type:       CodeFence,
 		Attributes: map[string]string{},
 		Literal:    string(block),
 	}
 	if len(language) > 0 {
-		node.Attributes["lang"] = string(language)
+		n1.Attributes["lang"] = string(language)
 	}
-	return node
+	node.Children = append(node.Children, n1)
+	return true
 }
 
-var yamlkvRegexp = regexp.MustCompile(`([a-z]+): (.+)`) //nolint:golint,lll
+var yamlkvRegexp = regexp.MustCompile(`(\w+): (.+)`) //nolint:golint,lll
 
 func parseMeta(doc *Node, st *ParserState) {
 	st.consumeLine()
@@ -409,12 +423,12 @@ func parseMeta(doc *Node, st *ParserState) {
 	}
 }
 
-func parseHeading(st *ParserState) Node {
+func parseHeading(node *Node, st *ParserState) bool {
 	level := 0
 	for ; level < len(st.source) && st.source[level] == '#'; level++ {
 	}
 	st.consumeN(level + 1)
-	node := Node{
+	n1 := Node{
 		Type:       Heading,
 		Attributes: map[string]string{},
 	}
@@ -428,17 +442,18 @@ func parseHeading(st *ParserState) Node {
 		attrsLine := h[a1+2 : a1+a2]
 		h = h[:a1]
 		if len(attrsLine) > 1 && attrsLine[0] == '#' {
-			node.Attributes["id"] = string(attrsLine[1:])
+			n1.Attributes["id"] = string(attrsLine[1:])
 		}
 	}
 
-	node.Literal = string(h)
-	node.Attributes["level"] = fmt.Sprintf("%d", level)
-	return node
+	n1.Literal = string(h)
+	n1.Attributes["level"] = fmt.Sprintf("%d", level)
+	node.Children = append(node.Children, n1)
+	return true
 }
 
-func parseList(st *ParserState, symbol []byte) Node {
-	node := Node{
+func parseList(node *Node, st *ParserState, symbol []byte) bool {
+	n1 := Node{
 		Type:       List,
 		Attributes: map[string]string{},
 		Children:   []Node{},
@@ -451,12 +466,13 @@ func parseList(st *ParserState, symbol []byte) Node {
 			Type:     ListItem,
 			Children: text,
 		}
-		node.Children = append(node.Children, li)
+		n1.Children = append(n1.Children, li)
 	}
-	return node
+	node.Children = append(node.Children, n1)
+	return true
 }
 
-func parseAdmonition(st *ParserState) Node {
+func parseAdmonition(node *Node, st *ParserState) bool {
 	st.consumeN(len("!!! "))
 	level := strings.TrimSpace(string(st.consumeLine()))
 	starter := "    "
@@ -471,12 +487,13 @@ func parseAdmonition(st *ParserState) Node {
 		first = false
 	}
 	children := parseText(text.Bytes())
-	node := Node{
+	n1 := Node{
 		Type:       Admonition,
 		Attributes: map[string]string{"level": level},
 		Children:   children,
 	}
-	return node
+	node.Children = append(node.Children, n1)
+	return true
 }
 
 type ParserState struct {

@@ -1,0 +1,23 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "Hi"
+        }
+      ]
+    },
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "dude"
+        }
+      ]
+    }
+  ]
+}

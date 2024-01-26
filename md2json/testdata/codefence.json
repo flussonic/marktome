@@ -1,0 +1,12 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "CodeFence",
+      "text": "def method():\n  return True\n",
+      "attributes": {
+        "lang": "ruby"
+      }
+    }
+  ]
+}

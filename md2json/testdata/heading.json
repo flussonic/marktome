@@ -1,0 +1,41 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Heading",
+      "text": "Heading1.1",
+      "attributes": {
+        "level": "1"
+      }
+    },
+    {
+      "type": "Heading",
+      "text": "Heading1.2",
+      "attributes": {
+        "id": "label2",
+        "level": "1"
+      }
+    },
+    {
+      "type": "Heading",
+      "text": "Heading2.1",
+      "attributes": {
+        "level": "2"
+      }
+    },
+    {
+      "type": "Heading",
+      "text": "Heading3",
+      "attributes": {
+        "level": "3"
+      }
+    },
+    {
+      "type": "Heading",
+      "text": "Heading4",
+      "attributes": {
+        "level": "4"
+      }
+    }
+  ]
+}

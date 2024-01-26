@@ -1,9 +1,12 @@
 
+test:
+	go build
+	go test -v foli2/md2json
 
 all:
 	go build
 	rm -rf stage*
-	mkdir -p stage-out/en/doc/img stage-out/ru/doc/img
+	mkdir -p stage-out/en/doc/img stage-out/ru/doc/img cache
 	cp -r ../erlydoc/src stage-input
 	cp ../erlydoc/f2/*.yml stage-input/
 	sed -i '' 's|/usr/src/app/src/||' stage-input/preprocessors.yml
@@ -49,7 +52,7 @@ all:
 	./mkdocs-clean.py stage-out/ru/mkdocs.yml
 
 	./foli2 json2latex stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
-	docker run -i --rm -w /data -v `pwd`/stage-out/en/doc:/data latex pdf.sh
+	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 		
 	# cd stage-planar/ru && mkdocs build
 	# cd stage-planar/en && mkdocs build

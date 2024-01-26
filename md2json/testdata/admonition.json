@@ -1,0 +1,25 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Admonition",
+      "children": [
+        {
+          "type": "Text",
+          "text": "This "
+        },
+        {
+          "type": "Bold",
+          "text": "is"
+        },
+        {
+          "type": "Text",
+          "text": " a warning\nSecond line."
+        }
+      ],
+      "attributes": {
+        "level": "warning"
+      }
+    }
+  ]
+}

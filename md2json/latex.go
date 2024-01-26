@@ -274,6 +274,8 @@ func writeTexListItem(n *Node) []byte {
 
 func escapeTexText(t string) string {
 	t = strings.ReplaceAll(t, "#", "\\#")
+	t = strings.ReplaceAll(t, "$", "\\$")
+	t = strings.ReplaceAll(t, "_", "\\_")
 	return t
 }
 

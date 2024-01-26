@@ -1,0 +1,31 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "Text1"
+        }
+      ]
+    },
+    {
+      "type": "HTML",
+      "text": "This *is* a `code`\n\nno interpretation here\n",
+      "attributes": {
+        "id": "a.conf",
+        "tag": "snippet"
+      }
+    },
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "text2"
+        }
+      ]
+    }
+  ]
+}
