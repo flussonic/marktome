@@ -182,6 +182,10 @@ func writeTexText(n *Node) []byte {
 
 func writeTexImage(n *Node) []byte {
 	src, _ := n.Attributes["src"]
+	// TODO: add svg support
+	if strings.HasSuffix(src, ".svg") {
+		return []byte{}
+	}
 	t := `\begin{figure}[hbt!]
 	\centering
 	\includegraphics[width=0.9\textwidth]{%s}
@@ -241,7 +245,7 @@ func writeTexHeading(n *Node) []byte {
 		text.WriteString("subparagraph")
 	}
 	text.WriteString("{")
-	text.WriteString(n.Literal)
+	text.WriteString(escapeTexText(n.Literal))
 	text.WriteString("}")
 	id, ok := n.Attributes["id"]
 	if ok {
@@ -297,9 +301,14 @@ func writeTexCode(n *Node) []byte {
 			lang = lang1
 		}
 	}
-	text.WriteString("\\mintinline{" + lang + "}|")
-	text.WriteString(escapeTex(n.Literal))
-	text.WriteString("|")
+	text.WriteString("\\mintinline{" + lang + "}")
+	bracket := "|"
+	if strings.Index(n.Literal, "|") >= 0 && strings.Index(n.Literal, "$") < 0 {
+		bracket = "$"
+	}
+	text.WriteString(bracket)
+	text.WriteString(n.Literal)
+	text.WriteString(bracket)
 	return text.Bytes()
 }
 
