@@ -1,0 +1,22 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "HTML",
+          "text": "Link",
+          "attributes": {
+            "anchor": "a",
+            "tag": "link"
+          }
+        },
+        {
+          "type": "Text",
+          "text": " will lead to other page."
+        }
+      ]
+    }
+  ]
+}

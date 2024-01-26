@@ -1,0 +1,14 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "| title1 | title2 |\n|----|---|\n| cell1 | cell2|\n|cell3| cell4|"
+        }
+      ]
+    }
+  ]
+}
