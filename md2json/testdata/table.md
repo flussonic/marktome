@@ -1,4 +1,4 @@
 | title1 | title2 |
 |----|---|
-| cell1 | cell2|
-|cell3| cell4|
+| cell1 `code` | cell2 *emph* |
+|cell3<br>tag| cell4 <link anchor="a">link</link>|

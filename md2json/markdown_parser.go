@@ -304,7 +304,48 @@ func parseParagraph(st *ParserState, node *Node) bool {
 }
 
 func parseTable(st *ParserState, node *Node) bool {
-	return false
+	if !st.startsWith("|") {
+		return false
+	}
+	source := st.source
+	headerText := st.consumeLine()
+	if !st.startsWith("|-") {
+		st.source = source
+		return false
+	}
+	st.consumeLine() // Line with |----|---|
+	if !st.startsWith("|") {
+		st.source = source
+		return false
+	}
+
+	header := Node{Type: TableHead, Children: make([]Node, 0)}
+	headerParts := bytes.Split(headerText, []byte{'|'})
+	for i, p := range headerParts {
+		p_ := strings.Trim(string(p), " \t")
+		if i > 0 && i < len(headerParts)-1 {
+			header.Children = append(header.Children, Node{Type: Text, Literal: p_})
+		}
+	}
+
+	body := Node{Type: TableBody, Children: make([]Node, 0)}
+	for st.startsWith("|") {
+		row := Node{Type: TableRow, Children: make([]Node, 0)}
+		line := st.consumeLine()
+		rowParts := bytes.Split(line, []byte{'|'})
+		for i, p := range rowParts {
+			p_ := strings.Trim(string(p), " \t")
+			cell := parseText([]byte(p_))
+			if i > 0 && i < len(rowParts)-1 {
+				row.Children = append(row.Children, Node{Type: TableCell, Children: cell})
+			}
+		}
+		body.Children = append(body.Children, row)
+	}
+
+	table := Node{Type: Table, Children: []Node{header, body}}
+	node.Children = append(node.Children, table)
+	return true
 }
 
 func parseText(source []byte) []Node {

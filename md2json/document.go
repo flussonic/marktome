@@ -18,6 +18,11 @@ const (
 	CodeFence  Kind = "CodeFence"
 	Bold       Kind = "Bold"
 	Emphasis   Kind = "Emphasis"
+	Table      Kind = "Table"
+	TableHead  Kind = "THead"
+	TableBody  Kind = "TBody"
+	TableRow   Kind = "Row"
+	TableCell  Kind = "Cell"
 )
 
 type Node struct {

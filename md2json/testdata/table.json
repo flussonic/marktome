@@ -2,11 +2,97 @@
   "type": "Document",
   "children": [
     {
-      "type": "Paragraph",
+      "type": "Table",
       "children": [
         {
-          "type": "Text",
-          "text": "| title1 | title2 |\n|----|---|\n| cell1 | cell2|\n|cell3| cell4|"
+          "type": "THead",
+          "children": [
+            {
+              "type": "Text",
+              "text": "title1"
+            },
+            {
+              "type": "Text",
+              "text": "title2"
+            }
+          ]
+        },
+        {
+          "type": "TBody",
+          "children": [
+            {
+              "type": "Row",
+              "children": [
+                {
+                  "type": "Cell",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "text": "cell1 "
+                    },
+                    {
+                      "type": "Code",
+                      "text": "code"
+                    }
+                  ]
+                },
+                {
+                  "type": "Cell",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "text": "cell2 "
+                    },
+                    {
+                      "type": "Emphasis",
+                      "text": "emph"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Row",
+              "children": [
+                {
+                  "type": "Cell",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "text": "cell3"
+                    },
+                    {
+                      "type": "HTML",
+                      "attributes": {
+                        "tag": "br"
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "text": "tag"
+                    }
+                  ]
+                },
+                {
+                  "type": "Cell",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "text": "cell4 "
+                    },
+                    {
+                      "type": "HTML",
+                      "text": "link",
+                      "attributes": {
+                        "anchor": "a",
+                        "tag": "link"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }
