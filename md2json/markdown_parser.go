@@ -45,13 +45,27 @@ func parseDocument(st *ParserState) Node {
 			break
 		}
 
-		parseComment(st, &node)
-		parseBlockHTML(st, &node)
-		parseHeading(st, &node)
-		parseList(st, &node)
-		parseAdmonition(st, &node)
-		parseCodeFence(st, &node)
-		parseTable(st, &node)
+		if parseComment(st, &node) {
+			continue
+		}
+		if parseBlockHTML(st, &node) {
+			continue
+		}
+		if parseHeading(st, &node) {
+			continue
+		}
+		if parseList(st, &node) {
+			continue
+		}
+		if parseAdmonition(st, &node) {
+			continue
+		}
+		if parseCodeFence(st, &node) {
+			continue
+		}
+		if parseTable(st, &node) {
+			continue
+		}
 		// goes last
 		parseParagraph(st, &node)
 	}

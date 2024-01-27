@@ -23,9 +23,9 @@ func CrosscheckSuperlinks(rootDir string) error {
 	for _, fp := range ListAllMd(rootDir) {
 		origName := strings.TrimSuffix(strings.TrimPrefix(fp, rootDir), ".md")
 		doc, _ := ReadJson(fp)
-		var addHeadings func(n Node) error
+		var readHeadings func(n Node) error
 
-		addHeadings = func(n Node) error {
+		readHeadings = func(n Node) error {
 			if n.Type == Heading && n.Attributes != nil {
 				val, ok := n.Attributes["id"]
 				if ok {
@@ -41,7 +41,7 @@ func CrosscheckSuperlinks(rootDir string) error {
 			}
 			if n.Children != nil {
 				for _, ch := range n.Children {
-					e := addHeadings(ch)
+					e := readHeadings(ch)
 					if e != nil {
 						return e
 					}
@@ -49,7 +49,7 @@ func CrosscheckSuperlinks(rootDir string) error {
 			}
 			return nil
 		}
-		err := addHeadings(doc)
+		err := readHeadings(doc)
 		if err != nil {
 			return err
 		}

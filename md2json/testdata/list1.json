@@ -55,6 +55,13 @@
           ]
         }
       ]
+    },
+    {
+      "type": "Heading",
+      "text": "heading",
+      "attributes": {
+        "level": "1"
+      }
     }
   ]
 }
