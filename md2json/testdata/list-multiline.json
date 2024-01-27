@@ -1,0 +1,36 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "List",
+      "children": [
+        {
+          "type": "ListItem",
+          "children": [
+            {
+              "type": "Text",
+              "text": "Create a backup:"
+            },
+            {
+              "type": "CodeFence",
+              "text": "pg_dump watcher > watcher-$(date +%s)_backup_dump.sql\n"
+            }
+          ]
+        },
+        {
+          "type": "ListItem",
+          "children": [
+            {
+              "type": "Text",
+              "text": "Determine dependencies:"
+            },
+            {
+              "type": "CodeFence",
+              "text": "apt-cache show watcher=20.06 | egrep 'Depends|Suggests:'\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

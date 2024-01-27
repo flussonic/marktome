@@ -112,6 +112,10 @@ func (st *InlineParserState) parseInliner(symbol []byte, typ Kind) {
 		return
 	}
 	i := bytes.Index(st.source[len(symbol):], symbol)
+	j := bytes.Index(st.source[len(symbol):], []byte{'\n'})
+	if j > 0 && j < i {
+		return
+	}
 	if i > 0 {
 		st.flushText()
 		st.consumeN(len(symbol))
@@ -505,12 +509,26 @@ func parseList(st *ParserState, node *Node) bool {
 		Children:   []Node{},
 	}
 	for !st.eof() && st.startsWith(string(symbol)) {
-		st.consumeN(2)
+		st.consumeN(len(symbol))
 		line := st.consumeLine()
+		if st.startsWith("\n") {
+			st.consumeLine()
+		}
 		text := parseText(line)
 		li := Node{
 			Type:     ListItem,
 			Children: text,
+		}
+		nestedPrefix := "    "
+		if st.startsWith(nestedPrefix) {
+			var nested bytes.Buffer
+			for st.startsWith(nestedPrefix) {
+				l := bytes.TrimPrefix(st.consumeLine(), []byte(nestedPrefix))
+				nested.Write(l)
+				nested.WriteString("\n")
+			}
+			nestedDoc := MarkdownParse(nested.Bytes())
+			li.Children = append(li.Children, nestedDoc.Children...)
 		}
 		n1.Children = append(n1.Children, li)
 	}

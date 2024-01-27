@@ -87,6 +87,17 @@ func Command_json2md(args []string) error {
 	}
 	inDir := args[0]
 	outDir := args[1]
+
+	st, err := os.Stat(inDir)
+	if err != nil {
+		return err
+	}
+	if !st.IsDir() {
+		os.MkdirAll(filepath.Dir(outDir), os.ModePerm)
+		err := Json2Md(inDir, outDir)
+		return err
+	}
+
 	for _, out := range ListAllMd(inDir) {
 		out2 := outDir + "/" + strings.TrimPrefix(out, inDir+"/")
 		os.MkdirAll(filepath.Dir(out2), os.ModePerm)
