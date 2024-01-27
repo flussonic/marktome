@@ -8,8 +8,13 @@
           "type": "ListItem",
           "children": [
             {
-              "type": "Text",
-              "text": "Create a backup:"
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "Create a backup:"
+                }
+              ]
             },
             {
               "type": "CodeFence",
@@ -21,8 +26,13 @@
           "type": "ListItem",
           "children": [
             {
-              "type": "Text",
-              "text": "Determine dependencies:"
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "Determine dependencies:"
+                }
+              ]
             },
             {
               "type": "CodeFence",

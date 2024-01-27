@@ -515,9 +515,13 @@ func parseList(st *ParserState, node *Node) bool {
 			st.consumeLine()
 		}
 		text := parseText(line)
+		liContent := Node{
+			Type:     Paragraph,
+			Children: text,
+		}
 		li := Node{
 			Type:     ListItem,
-			Children: text,
+			Children: []Node{liContent},
 		}
 		nestedPrefix := "    "
 		if st.startsWith(nestedPrefix) {

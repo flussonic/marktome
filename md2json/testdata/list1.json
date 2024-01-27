@@ -8,8 +8,13 @@
           "type": "ListItem",
           "children": [
             {
-              "type": "Text",
-              "text": "item1"
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "item1"
+                }
+              ]
             }
           ]
         },
@@ -17,12 +22,17 @@
           "type": "ListItem",
           "children": [
             {
-              "type": "Text",
-              "text": "item2 "
-            },
-            {
-              "type": "Code",
-              "text": "code"
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "item2 "
+                },
+                {
+                  "type": "Code",
+                  "text": "code"
+                }
+              ]
             }
           ]
         },
@@ -30,12 +40,17 @@
           "type": "ListItem",
           "children": [
             {
-              "type": "Text",
-              "text": "item3 "
-            },
-            {
-              "type": "Emphasis",
-              "text": "emph"
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "item3 "
+                },
+                {
+                  "type": "Emphasis",
+                  "text": "emph"
+                }
+              ]
             }
           ]
         }
