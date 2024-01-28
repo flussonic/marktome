@@ -3,113 +3,16 @@ package md2json
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 )
-
-func MergeDocument(input string) (*Node, error) {
-	if strings.HasSuffix(input, ".md") {
-		doc, err := ReadJson(input)
-		return &doc, err
-	}
-
-	foliant, err := YamlParse(input)
-	if err != nil {
-		return nil, err
-	}
-	nav, _ := foliant["chapters"]
-	srcDir0, _ := foliant["src_dir"]
-	srcDir := filepath.Join(filepath.Dir(input), srcDir0.(string))
-
-	full := []Node{}
-
-	var mergeChapters func(menu interface{}) error
-	mergeChapters = func(menu interface{}) error {
-		if reflect.TypeOf(menu).Kind() == reflect.Slice {
-			for _, v := range menu.([]interface{}) {
-				if reflect.TypeOf(v).Kind() == reflect.String {
-					if !strings.HasSuffix(v.(string), ".md") {
-						continue
-					}
-					fp := filepath.Join(srcDir, v.(string))
-					doc, err := ReadJson(fp)
-					if err != nil {
-						return err
-					}
-					full = append(full, doc.Children...)
-				}
-				if reflect.TypeOf(v).Kind() == reflect.Map {
-					err := mergeChapters(v)
-					if err != nil {
-						return err
-					}
-				}
-				if reflect.TypeOf(v).Kind() == reflect.Slice {
-					err := mergeChapters(v)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-		if reflect.TypeOf(menu).Kind() == reflect.Map {
-			for _, v := range menu.(map[string]interface{}) {
-				if reflect.TypeOf(v).Kind() == reflect.String {
-					if !strings.HasSuffix(v.(string), ".md") {
-						continue
-					}
-					fp := filepath.Join(srcDir, v.(string))
-					doc, err := ReadJson(fp)
-					if err != nil {
-						return err
-					}
-					full = append(full, doc.Children...)
-				}
-				if reflect.TypeOf(v).Kind() == reflect.Map {
-					// full = append(full, Node{
-					// 	Type:       Heading,
-					// 	Attributes: map[string]string{"level": "0"},
-					// 	Literal:    k,
-					// })
-					err := mergeChapters(v)
-					if err != nil {
-						return err
-					}
-				}
-				if reflect.TypeOf(v).Kind() == reflect.Slice {
-					// full = append(full, Node{
-					// 	Type:       Heading,
-					// 	Attributes: map[string]string{"level": "0"},
-					// 	Literal:    k,
-					// })
-					err := mergeChapters(v)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-		return nil
-	}
-	err = mergeChapters(nav)
-	if err != nil {
-		return nil, err
-	}
-	document := Node{
-		Type:       Document,
-		Attributes: make(AttributeMap),
-		Children:   full,
-	}
-	return &document, nil
-}
 
 func Latex(n *Node) ([]byte, error) {
 	var text bytes.Buffer
 	if n.Children != nil {
 		for _, ch := range n.Children {
 			text.Write(writeTexNode(&ch))
+			text.WriteString("\n")
 		}
 	}
 	return text.Bytes(), nil
@@ -143,6 +46,8 @@ func writeTexNode(n *Node) []byte {
 		return writeTexCodeFence(n)
 	case Table:
 		return writeTexTable(n)
+	case "NewPage":
+		return writeTexNewpage(n)
 	// case HTML:
 	// 	return writeHTML(n)
 	default:
@@ -156,6 +61,10 @@ func writeTexNode(n *Node) []byte {
 	}
 	return []byte{}
 
+}
+
+func writeTexNewpage(n *Node) []byte {
+	return []byte("\\newpage\n")
 }
 
 func writeTexChildren(n *Node) []byte {
@@ -172,7 +81,6 @@ func writeTexParagraph(n *Node) []byte {
 	var text bytes.Buffer
 	text.Write(writeTexChildren(n))
 	text.WriteString("\n")
-	text.WriteString("\n")
 	return text.Bytes()
 }
 
@@ -186,12 +94,10 @@ func writeTexImage(n *Node) []byte {
 	if strings.HasSuffix(src, ".svg") {
 		return []byte{}
 	}
-	t := `\begin{figure}[hbt!]
-	\centering
-	\includegraphics[width=0.9\textwidth]{%s}
-	\caption{%s}
- \end{figure}`
-	return []byte(fmt.Sprintf(t, strings.ReplaceAll(src, "_", "\\_"), escapeTexText(n.Literal)))
+	return []byte(fmt.Sprintf(
+		"\\documentImage{%s}{%s}\n",
+		escapeTexText(n.Literal),
+		strings.ReplaceAll(src, "_", "\\_")))
 }
 
 func writeTexLink(n *Node) []byte {
@@ -271,6 +177,9 @@ func writeTexListItem(n *Node) []byte {
 	// inner := writeTexChildren(n)
 	inner := writeTexNode(&n.Children[0])
 	rows := bytes.Split(inner, []byte{'\n'})
+	if len(rows[len(rows)-1]) == 0 {
+		rows = rows[:len(rows)-1]
+	}
 	for _, r := range rows {
 		text.WriteString("  ")
 		text.Write(r)

@@ -2,7 +2,6 @@
 
 import yaml
 import sys
-import os.path
 
 with open(sys.argv[1]) as f:
   mkdocs = yaml.safe_load(f)

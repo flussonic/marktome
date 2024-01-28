@@ -47,7 +47,8 @@ all:
 	./mkdocs-clean.py stage-out/en/mkdocs.yml
 	./mkdocs-clean.py stage-out/ru/mkdocs.yml
 
-	./foli2 json2latex stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
+	# ./foli2 json2latex stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
+	./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 		
 	# cd stage-planar/ru && mkdocs build
@@ -60,5 +61,5 @@ test:
 pdf:
 	go build
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
-	./foli2 json2latex stage-planar/en/update-and-rollback-watcher.md stage-out/en/doc/content.tex
+	./foli2 json2latex stage-planar/en/mobile-apps-for-accessing-watcher.md stage-out/en/doc/content.tex
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data latex pdf.sh

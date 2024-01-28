@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +22,7 @@ var Commands = map[string]CommandFunction{
 	"json2md":        Command_json2md,
 	"lint":           Command_lint,
 	"json2latex":     Command_json2latex,
+	"heading":        Command_heading,
 }
 
 func Commmand_md2json(args []string) error {
@@ -149,15 +151,59 @@ func Command_json2latex(args []string) error {
 	if len(args) < 2 {
 		return errors.New(fmt.Sprintf("usage: json2latex input_dir output.tex"))
 	}
+	input := args[0]
+	output := args[1]
+	args = args[2:]
+	level := -1
+	for len(args) > 0 {
+		if args[0] == "addheading" {
+			if len(args) < 2 {
+				return errors.New(fmt.Sprintf("addheading level"))
+			}
+			level0, err := strconv.Atoi(args[1])
+			if err != nil {
+				return err
+			}
+			level = level0
+			args = args[2:]
+			continue
+		}
+		return errors.New(fmt.Sprintf("Unknown json2latex args %v", args))
+	}
 
-	doc, err := MergeDocument(args[0])
+	doc, err := ReadJson(input)
 	if err != nil {
 		return err
 	}
-	tex, err := Latex(doc)
+	if level != -1 {
+		for _, n := range doc.Children {
+			if n.Type == Heading {
+				lvl, _ := n.Attributes["level"]
+				lvl0, _ := strconv.Atoi(lvl)
+				n.Attributes["level"] = fmt.Sprintf("%d", lvl0+level)
+			}
+		}
+	}
+	tex, err := Latex(&doc)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(args[1], tex, os.ModePerm)
+	err = os.WriteFile(output, tex, os.ModePerm)
 	return err
+}
+
+func Command_heading(args []string) error {
+	if len(args) < 1 {
+		return errors.New("usage: heading input")
+	}
+	doc, err := ReadJson(args[0])
+	if err != nil {
+		return err
+	}
+	title, _, found := doc.Heading()
+	if !found {
+		return errors.New(fmt.Sprintf("No heading in document: %s", args[0]))
+	}
+	fmt.Printf("%s\n", title)
+	return nil
 }
