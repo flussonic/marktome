@@ -1,8 +1,4 @@
 
-test:
-	go build
-	go test -v foli2/md2json
-
 all:
 	go build
 	rm -rf stage*
@@ -56,6 +52,10 @@ all:
 		
 	# cd stage-planar/ru && mkdocs build
 	# cd stage-planar/en && mkdocs build
+
+test:
+	go build
+	go test -v foli2/md2json
 
 pdf:
 	go build

@@ -1,0 +1,41 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "List",
+      "children": [
+        {
+          "type": "ListItem",
+          "children": [
+            {
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "item1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ListItem",
+          "children": [
+            {
+              "type": "Paragraph",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "item2"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "attributes": {
+        "ordered": "true"
+      }
+    }
+  ]
+}

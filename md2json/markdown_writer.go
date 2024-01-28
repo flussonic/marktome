@@ -79,8 +79,8 @@ func writeNode(n *Node) []byte {
 		return writeHeading(n)
 	case List:
 		return writeList(n)
-	case ListItem:
-		return writeListItem(n)
+	// case ListItem:
+	// 	return writeListItem(n)
 	case Admonition:
 		return writeAdmonition(n)
 	case CodeFence:
@@ -227,13 +227,30 @@ func writeCodeFence(n *Node) []byte {
 
 func writeList(n *Node) []byte {
 	var text bytes.Buffer
-	text.Write(writeChildren(n))
+	ordered := false
+	if n.Children != nil {
+		_, ok := n.Attributes["ordered"]
+		if ok {
+			ordered = true
+		}
+	}
+	for i, ch := range n.Children {
+		j := i + 1
+		if !ordered {
+			j = -1
+		}
+		text.Write(writeListItem(j, &ch))
+	}
 	return text.Bytes()
 }
 
-func writeListItem(n *Node) []byte {
+func writeListItem(i int, n *Node) []byte {
 	var text bytes.Buffer
-	text.WriteString("* ")
+	if i < 0 {
+		text.WriteString("* ")
+	} else {
+		text.WriteString(fmt.Sprintf("%d. ", i))
+	}
 	if len(n.Children) == 0 {
 		text.WriteString("\n")
 		return text.Bytes()

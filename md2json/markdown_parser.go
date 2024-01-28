@@ -507,12 +507,18 @@ func parseHeading(st *ParserState, node *Node) bool {
 	return true
 }
 
+var numberedListItemRe = regexp.MustCompile("^[\\d+]\\. ")
+
 func parseList(st *ParserState, node *Node) bool {
 	symbol := []byte{}
+	ordered := false
 	if st.startsWith("* ") {
 		symbol = []byte("* ")
 	} else if st.startsWith("- ") {
 		symbol = []byte("- ")
+	} else if numberedListItemRe.Match(st.source) {
+		symbol = []byte("1. ")
+		ordered = true
 	} else {
 		return false
 	}
@@ -522,7 +528,11 @@ func parseList(st *ParserState, node *Node) bool {
 		Attributes: map[string]string{},
 		Children:   []Node{},
 	}
-	for !st.eof() && st.startsWith(string(symbol)) {
+	if ordered {
+		n1.Attributes["ordered"] = "true"
+	}
+	for !st.eof() && ((!ordered && st.startsWith(string(symbol))) ||
+		(ordered && numberedListItemRe.Match(st.source))) {
 		st.consumeN(len(symbol))
 		line := st.consumeLine()
 		if st.startsWith("\n") {

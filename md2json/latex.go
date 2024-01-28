@@ -268,7 +268,8 @@ func writeTexList(n *Node) []byte {
 func writeTexListItem(n *Node) []byte {
 	var text bytes.Buffer
 	text.WriteString("\\item\n")
-	inner := writeTexChildren(n)
+	// inner := writeTexChildren(n)
+	inner := writeTexNode(&n.Children[0])
 	rows := bytes.Split(inner, []byte{'\n'})
 	for _, r := range rows {
 		text.WriteString("  ")
@@ -282,6 +283,7 @@ func escapeTexText(t string) string {
 	t = strings.ReplaceAll(t, "#", "\\#")
 	t = strings.ReplaceAll(t, "%", "\\%")
 	t = strings.ReplaceAll(t, "$", "\\$")
+	t = strings.ReplaceAll(t, "&", "\\&")
 	t = strings.ReplaceAll(t, "_", "\\_")
 	return t
 }
