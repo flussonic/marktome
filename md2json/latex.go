@@ -104,7 +104,7 @@ func writeTexLink(n *Node) []byte {
 	src, _ := n.Attributes["href"]
 	anchor, _ := n.Attributes["anchor"]
 	if strings.HasSuffix(src, ".md") {
-		return []byte(fmt.Sprintf(`\href{%s}{%s}`, labelTex(anchor), escapeTexText(n.Literal)))
+		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, labelTex(anchor), escapeTexText(n.Literal)))
 	} else {
 		return []byte(fmt.Sprintf(`\href{%s}{%s}`, src, escapeTexText(n.Literal)))
 	}
