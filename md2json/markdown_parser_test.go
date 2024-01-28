@@ -2,7 +2,7 @@ package md2json_test
 
 import (
 	"encoding/json"
-	"foli2/md2json"
+	"marktome/md2json"
 	"os"
 	"path/filepath"
 	"strings"

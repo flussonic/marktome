@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"foli2/md2json"
+	"marktome/md2json"
 	"os"
 )
 

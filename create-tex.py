@@ -16,7 +16,7 @@ base_dir = os.path.dirname(sys.argv[1]) + "/" + foliant['src_dir']+"/"
 out_dir = os.path.dirname(sys.argv[2])+"/"
 
 def heading(name):
-   output = subprocess.check_output(['./foli2','heading',base_dir+name])
+   output = subprocess.check_output(['./marktome','heading',base_dir+name])
    return escape(output.strip().decode('utf-8'))
 
 def escape(text):
@@ -28,7 +28,7 @@ def append_file(name):
     # out.write("\\include{%s}\n" % Path(name).stem)
     input = base_dir+name
     output = "temp.tex"
-    subprocess.check_output(['./foli2','json2latex',input,output,"addheading","1"])
+    subprocess.check_output(['./marktome','json2latex',input,output,"addheading","1"])
     out.write("\\newpage\n%% MARKDOWN %s\n" % name)
     with open("temp.tex") as temp:
        out.write(temp.read())

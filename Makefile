@@ -25,29 +25,29 @@ all:
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
 
 
-	./foli2 macros stage-input/foliant.flussonic.en.yml stage-input
-	./foli2 md2json stage-input stage-json
+	./marktome macros stage-input/foliant.flussonic.en.yml stage-input
+	./marktome md2json stage-input stage-json
 	cp stage-input/*.yml stage-json/
-	./foli2 planarize stage-json/foliant.flussonic.en.yml stage-planar/foliant.flussonic.en.yml
-	./foli2 planarize stage-json/foliant.flussonic.ru.yml stage-planar/foliant.flussonic.ru.yml
+	./marktome planarize stage-json/foliant.flussonic.en.yml stage-planar/foliant.flussonic.en.yml
+	./marktome planarize stage-json/foliant.flussonic.ru.yml stage-planar/foliant.flussonic.ru.yml
 
-	./foli2 superlinks stage-planar/en
-	./foli2 superlinks stage-planar/ru
+	./marktome superlinks stage-planar/en
+	./marktome superlinks stage-planar/ru
 
-	./foli2 snippets stage-planar
-	./foli2 graphviz stage-planar/en stage-out/en/doc/img
-	./foli2 graphviz stage-planar/ru stage-out/ru/doc/img
+	./marktome snippets stage-planar
+	./marktome graphviz stage-planar/en stage-out/en/doc/img
+	./marktome graphviz stage-planar/ru stage-out/ru/doc/img
 
-	./foli2 json2md stage-planar/en stage-out/en/doc
-	./foli2 json2md stage-planar/ru stage-out/ru/doc
+	./marktome json2md stage-planar/en stage-out/en/doc
+	./marktome json2md stage-planar/ru stage-out/ru/doc
 
-	./foli2 foliant2mkdocs stage-planar/foliant.flussonic.en.yml stage-out/en/mkdocs.yml
-	./foli2 foliant2mkdocs stage-planar/foliant.flussonic.ru.yml stage-out/ru/mkdocs.yml
+	./marktome foliant2mkdocs stage-planar/foliant.flussonic.en.yml stage-out/en/mkdocs.yml
+	./marktome foliant2mkdocs stage-planar/foliant.flussonic.ru.yml stage-out/ru/mkdocs.yml
 
 	./mkdocs-clean.py stage-out/en/mkdocs.yml
 	./mkdocs-clean.py stage-out/ru/mkdocs.yml
 
-	# ./foli2 json2latex stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
+	# ./marktome json2latex stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
 	./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 		
@@ -56,10 +56,10 @@ all:
 
 test:
 	go build
-	go test -v foli2/md2json
+	go test -v marktome/md2json
 
 pdf:
 	go build
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
-	./foli2 json2latex stage-planar/en/mobile-apps-for-accessing-watcher.md stage-out/en/doc/content.tex
+	./marktome json2latex stage-planar/en/mobile-apps-for-accessing-watcher.md stage-out/en/doc/content.tex
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data latex pdf.sh
