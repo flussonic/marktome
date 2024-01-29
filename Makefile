@@ -2,6 +2,7 @@
 all:
 	go build
 	rm -rf stage*
+	docker build -t latex -f Dockerfile.pandoc .
 	mkdir -p stage-out/en/doc/img stage-out/ru/doc/img cache
 	cp -r ../erlydoc/src stage-input
 	cp ../erlydoc/f2/*.yml stage-input/
@@ -48,10 +49,11 @@ all:
 	./mkdocs-clean.py stage-out/en/mkdocs.yml
 	./mkdocs-clean.py stage-out/ru/mkdocs.yml
 
-	# ./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
-	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
-
+	./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
 	./create-tex.py  stage-planar/foliant.flussonic.ru.yml stage-out/ru/doc/content.tex
+
+
+	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/ru/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 
 	# cd stage-planar/ru && mkdocs build

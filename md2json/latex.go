@@ -102,11 +102,11 @@ func writeTexImage(n *Node) []byte {
 
 func writeTexLink(n *Node) []byte {
 	src, _ := n.Attributes["href"]
-	anchor, _ := n.Attributes["anchor"]
-	if strings.HasSuffix(src, ".md") {
-		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, labelTex(anchor), escapeTexText(n.Literal)))
-	} else {
+	anchor, hasAnchor := n.Attributes["anchor"]
+	if strings.HasPrefix(src, "http") || !hasAnchor || len(anchor) == 0 {
 		return []byte(fmt.Sprintf(`\href{%s}{%s}`, src, escapeTexText(n.Literal)))
+	} else {
+		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, labelTex(anchor), escapeTexText(n.Literal)))
 	}
 }
 
@@ -147,7 +147,7 @@ func writeTexHeading(n *Node) []byte {
 		text.WriteString("subsubsection")
 	case 4:
 		text.WriteString("paragraph")
-	case 5:
+	default:
 		text.WriteString("subparagraph")
 	}
 	text.WriteString("{")
@@ -228,18 +228,20 @@ func writeTexCodeFence(n *Node) []byte {
 	var text bytes.Buffer
 
 	// \begin{codesnippet}
-	text.WriteString(`\begin{minted}[frame=single,breaklines]`)
-	lang := "c"
-	if n.Attributes != nil {
-		lang1, ok := n.Attributes["lang"]
-		if ok {
-			lang = lang1
-		}
-	}
-	text.WriteString(fmt.Sprintf("{%s}", lang))
-	text.WriteString("\n")
+	// text.WriteString(`\begin{minted}[frame=single,breaklines]`)
+	// lang := "c"
+	// if n.Attributes != nil {
+	// 	lang1, ok := n.Attributes["lang"]
+	// 	if ok {
+	// 		lang = lang1
+	// 	}
+	// }
+	// text.WriteString(fmt.Sprintf("{%s}", lang))
+	// text.WriteString("\n")
+	text.WriteString("\\begin{codeFence}\n")
 	text.WriteString(n.Literal)
-	text.WriteString("\\end{minted}\n\n")
+	text.WriteString("\\end{codeFence}\n")
+	// text.WriteString("\\end{minted}\n\n")
 	// это можно добавить для подписи
 	// \caption{My func}\label{lst:my_func}
 	// \end{codesnippet}
