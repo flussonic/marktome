@@ -1,3 +1,13 @@
+VERSION ?= $(shell git describe --abbrev=7 --long | sed 's/^v//g')
+ifeq (,$(BRANCH))
+	ifneq (,$(CI_BUILD_REF_SLUG))
+		BRANCH=$(CI_BUILD_REF_SLUG)
+	else
+	  BRANCH=$(shell git rev-parse --abbrev-ref HEAD| sed 's/\//-/')
+	endif
+endif
+
+
 
 all:
 	go build
@@ -68,3 +78,10 @@ pdf:
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
 	./marktome json2latex stage-planar/en/mobile-apps-for-accessing-watcher.md stage-out/en/doc/content.tex
 	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data latex pdf.sh
+
+
+deb:
+	docker build -t marktome-build:${BRANCH} --build-arg VERSION=${VERSION} .
+
+upload:
+	docker run --rm -e REPOSITORY_SECRET marktome-build:${BRANCH} autodeb.py upload marktome_${VERSION}_all.deb ${REPO}/marktome_${VERSION}_all.deb

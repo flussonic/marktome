@@ -1,0 +1,16 @@
+stages:
+  - build
+  - upload
+
+build:
+  stage: build
+  script:
+  - make deb
+
+upload:
+  stage: upload
+  only:
+  - master
+  script:
+  - make upload
+

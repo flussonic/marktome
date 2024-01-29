@@ -1,0 +1,6 @@
+Package: marktome
+Version: VERSION
+Maintainer: support@flussonic.com
+Architecture: all
+Section: base
+Description: Markdown processor for tomes of documenation
