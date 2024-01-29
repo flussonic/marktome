@@ -124,10 +124,10 @@ func Command_macros(args []string) error {
 }
 
 func Command_graphviz(args []string) error {
-	if len(args) < 2 {
-		return errors.New(fmt.Sprintf("usage: grapviz srcDir imageDir"))
+	if len(args) < 3 {
+		return errors.New(fmt.Sprintf("usage: grapviz srcDir imageDir /tmp"))
 	}
-	return Graphviz(args[0], args[1])
+	return Graphviz(args[0], args[1], args[2])
 }
 
 func Command_lint(args []string) error {
