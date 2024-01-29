@@ -22,11 +22,18 @@ RUN go mod download && go mod verify
 
 ADD main.go ./
 ADD md2json md2json
-RUN go build -v
+ADD multiarch.sh tmproot/usr/bin/marktome
+
+ARG VERSION
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+  go build -ldflags="-X 'main.Version=${VERSION}'" -o tmproot/usr/bin/x86_64-linux-gnu/marktome main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
+  go build -ldflags="-X 'main.Version=${VERSION}'" -o tmproot/usr/bin/aarch64-linux-gnu/marktome main.go
+
+
 
 ADD DEBIAN tmproot/DEBIAN
-RUN mkdir -p tmproot/usr/bin/ && mv marktome tmproot/usr/bin/
-ARG VERSION
 RUN sed -i "s/VERSION/${VERSION}/" tmproot/DEBIAN/control
 RUN dpkg-deb -Zgzip --build tmproot marktome_${VERSION}_all.deb
 
