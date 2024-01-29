@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func replaceGraphviz(imageDir string, n *Node, path string, cachePath string) (bool, error) {
+func replaceGraphviz(imageDir string, n *Node, path string, cacheDir string) (bool, error) {
 	dirty := false
 	if n.Type == HTML && n.Attributes != nil {
 		tag, ok1 := n.Attributes["tag"]
@@ -19,8 +19,8 @@ func replaceGraphviz(imageDir string, n *Node, path string, cachePath string) (b
 			hash := md5.Sum([]byte(n.Literal))
 			id := strings.TrimSuffix(filepath.Base(path), ".md")
 			imagePath := id + "-" + hex.EncodeToString(hash[:]) + ".png"
-			cachePath := filepath.Join(cachePath, imagePath)
-			graphPath := filepath.Join(cachePath, hex.EncodeToString(hash[:])+".vg")
+			cachePath := filepath.Join(cacheDir, imagePath)
+			graphPath := filepath.Join(cacheDir, hex.EncodeToString(hash[:])+".vg")
 
 			if _, err := os.Stat(cachePath); err != nil {
 				err = os.WriteFile(graphPath, []byte(n.Literal), os.ModePerm)
@@ -69,7 +69,7 @@ func replaceGraphviz(imageDir string, n *Node, path string, cachePath string) (b
 	}
 	if n.Children != nil {
 		for i := range n.Children {
-			d, err := replaceGraphviz(imageDir, &n.Children[i], path, cachePath)
+			d, err := replaceGraphviz(imageDir, &n.Children[i], path, cacheDir)
 			if err != nil {
 				return false, err
 			}
@@ -79,14 +79,14 @@ func replaceGraphviz(imageDir string, n *Node, path string, cachePath string) (b
 	return dirty, nil
 }
 
-func Graphviz(rootDir string, imageDir string, cachePath string) error {
+func Graphviz(rootDir string, imageDir string, cacheDir string) error {
 	for _, fp := range ListAllMd(rootDir) {
 		doc, err := ReadJson(fp)
 		var dirty bool
 		if err != nil {
 			return err
 		}
-		dirty, err = replaceGraphviz(imageDir, &doc, fp, cachePath)
+		dirty, err = replaceGraphviz(imageDir, &doc, fp, cacheDir)
 		if err != nil {
 			return err
 		}
