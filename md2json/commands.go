@@ -23,6 +23,7 @@ var Commands = map[string]CommandFunction{
 	"lint":           Command_lint,
 	"json2latex":     Command_json2latex,
 	"heading":        Command_heading,
+	"copy-images":    Command_copyImages,
 }
 
 func Commmand_md2json(args []string) error {
@@ -206,4 +207,12 @@ func Command_heading(args []string) error {
 	}
 	fmt.Printf("%s\n", title)
 	return nil
+}
+
+func Command_copyImages(args []string) error {
+	if len(args) < 3 {
+		return errors.New("usage: copy-images inputDoc inputImg outputImg")
+	}
+	err := CopyImages(args[0], args[1], args[2])
+	return err
 }

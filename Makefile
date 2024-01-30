@@ -13,8 +13,8 @@ all:
 	go build
 	rm -rf stage*
 	docker build -t latex -f Dockerfile.pandoc .
-	mkdir -p stage-out/en/doc/img stage-out/ru/doc/img cache
 	cp -r ../erlydoc/src stage-input
+	mkdir -p stage-planar/img stage-out/en/doc stage-out/ru/doc cache
 	cp ../erlydoc/f2/*.yml stage-input/
 	sed -i '' 's|/usr/src/app/src/||' stage-input/preprocessors.yml
 	sed -i '' 's|src/en|en|' stage-input/foliant.flussonic.en.yml
@@ -24,14 +24,9 @@ all:
 	cp -r ../erlydoc/f2/overrides stage-out/en/overrides
 	cp -r ../erlydoc/f2/overrides stage-out/ru/overrides
 
-	cp -r ../erlydoc/assets/* stage-out/en/doc/img
-	cp -r ../erlydoc/images stage-out/en/doc/img/auto
-
-	cp -r ../erlydoc/assets/* stage-out/ru/doc/img
-	cp -r ../erlydoc/images stage-out/ru/doc/img/auto
-
-	cp -r ../erlydoc/f2/template/flussonic.png stage-out/en/doc/img/
-	cp -r ../erlydoc/f2/template/flussonic.png stage-out/ru/doc/img/
+	cp -r ../erlydoc/assets/* stage-planar/img
+	cp -r ../erlydoc/images stage-planar/img/auto
+	cp -r ../erlydoc/f2/template/flussonic.png stage-planar/img/
 
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
 	cp ../erlydoc/f2/pdf/* stage-out/ru/doc/
@@ -47,9 +42,11 @@ all:
 	./marktome superlinks stage-planar/ru
 
 	./marktome snippets stage-planar
-	./marktome graphviz stage-planar/en stage-out/en/doc/img
-	./marktome graphviz stage-planar/ru stage-out/ru/doc/img
+	./marktome graphviz stage-planar/en stage-planar/img cache
+	./marktome graphviz stage-planar/ru stage-planar/img cache
+	./marktome copy-images stage-planar/en stage-planar/ stage-out/en/doc/
 
+	exit 4
 	./marktome json2md stage-planar/en stage-out/en/doc
 	./marktome json2md stage-planar/ru stage-out/ru/doc
 
@@ -64,10 +61,10 @@ all:
 
 
 	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
-	docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/ru/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
+	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/ru/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 
-	# cd stage-planar/ru && mkdocs build
-	# cd stage-planar/en && mkdocs build
+	cd stage-out/ru && mkdocs build
+	cd stage-out/en && mkdocs build
 
 test:
 	go build
