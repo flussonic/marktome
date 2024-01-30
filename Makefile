@@ -1,4 +1,4 @@
-VERSION ?= $(shell git describe --abbrev=7 --long | sed 's/^v//g')
+VERSION ?= $(shell git describe --abbrev=7 --long | sed 's/^v//g'| awk -F '-g' '{print $1}')
 ifeq (,$(BRANCH))
 	ifneq (,$(CI_BUILD_REF_SLUG))
 		BRANCH=$(CI_BUILD_REF_SLUG)
@@ -12,14 +12,10 @@ endif
 all:
 	go build
 	rm -rf stage*
-	docker build -t latex -f Dockerfile.pandoc .
+	# docker build -t latex -f Dockerfile.pandoc .
 	cp -r ../erlydoc/src stage-input
 	mkdir -p stage-planar/img stage-out/en/doc stage-out/ru/doc cache
 	cp ../erlydoc/f2/*.yml stage-input/
-	sed -i '' 's|/usr/src/app/src/||' stage-input/preprocessors.yml
-	sed -i '' 's|src/en|en|' stage-input/foliant.flussonic.en.yml
-	sed -i '' 's|src/ru|ru|' stage-input/foliant.flussonic.ru.yml
-	sed -i '' 's|src/ru|ru|' stage-input/foliant.watcher.en.yml
 
 	cp -r ../erlydoc/f2/overrides stage-out/en/overrides
 	cp -r ../erlydoc/f2/overrides stage-out/ru/overrides
@@ -46,7 +42,6 @@ all:
 	./marktome graphviz stage-planar/ru stage-planar/img cache
 	./marktome copy-images stage-planar/en stage-planar/ stage-out/en/doc/
 
-	exit 4
 	./marktome json2md stage-planar/en stage-out/en/doc
 	./marktome json2md stage-planar/ru stage-out/ru/doc
 

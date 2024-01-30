@@ -106,9 +106,6 @@ func Planarize(inDir string, outDir string, paths []string) (map[string]string, 
 			doc.Attributes = map[string]string{}
 		}
 		original := strings.TrimSuffix(strings.TrimPrefix(fp, inDir+"/"), ".md")
-		if original == "index" {
-			continue
-		}
 		doc.Attributes["original"] = original
 		doc.Attributes["title"] = heading
 
