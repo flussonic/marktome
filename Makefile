@@ -48,9 +48,6 @@ all:
 	./marktome foliant2mkdocs stage-planar/foliant.flussonic.en.yml stage-out/en/mkdocs.yml
 	./marktome foliant2mkdocs stage-planar/foliant.flussonic.ru.yml stage-out/ru/mkdocs.yml
 
-	./mkdocs-clean.py stage-out/en/mkdocs.yml
-	./mkdocs-clean.py stage-out/ru/mkdocs.yml
-
 	./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
 	./create-tex.py  stage-planar/foliant.flussonic.ru.yml stage-out/ru/doc/content.tex
 

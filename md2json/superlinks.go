@@ -62,21 +62,24 @@ func CrosscheckSuperlinks(rootDir string) error {
 
 		var checkAnchors func(n *Node) error
 		checkAnchors = func(n *Node) error {
-			if n.Type == "HTML" && n.Attributes != nil {
+			if (n.Type == "HTML" || n.Type == Link) && n.Attributes != nil {
 				tag, ok1 := n.Attributes["tag"]
 				anchor, ok2 := n.Attributes["anchor"]
-				if ok1 && ok2 && tag == "link" {
+				_, ok3 := n.Attributes["href"]
+				if ((ok1 && tag == "link") || n.Type == Link) && ok2 {
 					n.Type = Link
 					delete(n.Attributes, "tag")
-					location, ok := headings[anchor]
-					if ok {
-						rel := calculateRelativeLocation(origName, location)
-						if rel != "" {
-							n.Attributes["href"] = rel
-							dirty = true
+					dirty = true
+					if !ok3 {
+						location, ok := headings[anchor]
+						if ok {
+							rel := calculateRelativeLocation(origName, location)
+							if rel != "" {
+								n.Attributes["href"] = rel
+							}
+						} else {
+							return errors.New(fmt.Sprintf("Anchor %s in file %s not found in project", anchor, fp))
 						}
-					} else {
-						return errors.New(fmt.Sprintf("Anchor %s in file %s not found in project", anchor, fp))
 					}
 				}
 			}

@@ -270,12 +270,20 @@ func (st *InlineParserState) parseLink() {
 	}
 	st.flushText()
 	title := string(st.source[1:titleEnd])
-	url := string(st.source[titleEnd+2 : titleEnd+urlEnd])
+	fullUrl := strings.Split(string(st.source[titleEnd+2:titleEnd+urlEnd]), "#")
 	st.consumeN(titleEnd + urlEnd + 1)
 	node := Node{
 		Type:       Link,
-		Attributes: map[string]string{"href": url},
+		Attributes: map[string]string{},
 		Literal:    title,
+	}
+	if len(fullUrl) == 1 {
+		node.Attributes["href"] = fullUrl[0]
+	} else if len(fullUrl[0]) == 0 {
+		node.Attributes["anchor"] = fullUrl[1]
+	} else {
+		node.Attributes["href"] = fullUrl[0]
+		node.Attributes["anchor"] = fullUrl[1]
 	}
 	st.children = append(st.children, node)
 }
