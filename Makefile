@@ -17,14 +17,13 @@ all:
 	mkdir -p stage-planar/img stage-out/en/doc stage-out/ru/doc cache
 	cp ../erlydoc/f2/*.yml stage-input/
 
-	cp -r ../erlydoc/f2/overrides stage-out/en/overrides
-	cp -r ../erlydoc/f2/overrides stage-out/ru/overrides
+	cp -r ../erlydoc/f2/overrides stage-out/overrides
 
 	cp -r ../erlydoc/assets/* stage-planar/img
 	cp -r ../erlydoc/f2/template/flussonic.png stage-planar/img/
 
-	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
-	cp ../erlydoc/f2/pdf/* stage-out/ru/doc/
+	cp ../erlydoc/f2/pdf/* stage-out/en/
+	cp ../erlydoc/f2/pdf/* stage-out/ru/
 
 
 	./marktome macros stage-input/foliant.flussonic.en.yml stage-input
@@ -39,23 +38,24 @@ all:
 	./marktome snippets stage-planar
 	./marktome graphviz stage-planar/en stage-planar/img cache
 	./marktome graphviz stage-planar/ru stage-planar/img cache
-	./marktome copy-images stage-planar/en stage-planar/ stage-out/en/doc/
+	./marktome copy-images stage-planar/en stage-planar/ stage-out/en/
+	./marktome copy-images stage-planar/ru stage-planar/ stage-out/ru/
 
-	./marktome json2md stage-planar/en stage-out/en/doc
-	./marktome json2md stage-planar/ru stage-out/ru/doc
+	./marktome json2md stage-planar/en stage-out/en
+	./marktome json2md stage-planar/ru stage-out/ru
 
-	./marktome foliant2mkdocs stage-planar/foliant.flussonic.en.yml stage-out/en/mkdocs.yml
-	./marktome foliant2mkdocs stage-planar/foliant.flussonic.ru.yml stage-out/ru/mkdocs.yml
+	cp stage-planar/foliant.flussonic.en.yml stage-out/mkdocs.en.yml
+	cp stage-planar/foliant.flussonic.ru.yml stage-out/mkdocs.ru.yml
 
-	./create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/doc/content.tex
-	./create-tex.py  stage-planar/foliant.flussonic.ru.yml stage-out/ru/doc/content.tex
+	../erlydoc/f2/create-tex.py  stage-planar/foliant.flussonic.en.yml stage-out/en/content.tex
+	../erlydoc/f2/create-tex.py  stage-planar/foliant.flussonic.ru.yml stage-out/ru/content.tex
 
 
-	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/en/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
-	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/ru/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
+	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
+	# docker run -i -e COLUMNS="`tput cols`" --rm -w /data -v `pwd`/stage-out/doc:/data -v `pwd`/cache:/data/cache latex pdf.sh
 
-	cd stage-out/ru && mkdocs build
-	cd stage-out/en && mkdocs build
+	cd stage-out && mkdocs build -f mkdocs.en.yml -d flussonic_en
+	cd stage-out && mkdocs build -f mkdocs.ru.yml -d flussonic_ru
 
 test:
 	go build

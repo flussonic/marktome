@@ -9,18 +9,18 @@ import (
 	"strings"
 )
 
-func PlanarizeFoliant(input string, output string) error {
+func PlanarizeMkdocs(input string, output string) error {
 	foliant, err := YamlParse(input)
 	if err != nil {
 		return err
 	}
-	srcDir, ok := foliant["src_dir"]
+	srcDir, ok := foliant["docs_dir"]
 	if !ok {
-		return errors.New(fmt.Sprintf("No src_dir in foliant config %s", input))
+		return errors.New(fmt.Sprintf("No docs_dir in foliant config %s", input))
 	}
-	nav, ok := foliant["chapters"]
+	nav, ok := foliant["nav"]
 	if !ok {
-		return errors.New(fmt.Sprintf("No chapters in foliant config %s", input))
+		return errors.New(fmt.Sprintf("No nav in foliant config %s", input))
 	}
 	inDir := filepath.Join(filepath.Dir(input), srcDir.(string))
 	paths := ListAllMd(inDir)

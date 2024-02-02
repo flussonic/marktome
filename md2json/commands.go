@@ -12,18 +12,17 @@ import (
 type CommandFunction func([]string) error
 
 var Commands = map[string]CommandFunction{
-	"md2json":        Commmand_md2json,
-	"planarize":      Command_planarize,
-	"superlinks":     Command_superlinks,
-	"snippets":       Command_snippets,
-	"graphviz":       Command_graphviz,
-	"macros":         Command_macros,
-	"foliant2mkdocs": Commmand_foliant2mkdocs,
-	"json2md":        Command_json2md,
-	"lint":           Command_lint,
-	"json2latex":     Command_json2latex,
-	"heading":        Command_heading,
-	"copy-images":    Command_copyImages,
+	"md2json":     Commmand_md2json,
+	"planarize":   Command_planarize,
+	"superlinks":  Command_superlinks,
+	"snippets":    Command_snippets,
+	"graphviz":    Command_graphviz,
+	"macros":      Command_macros,
+	"json2md":     Command_json2md,
+	"lint":        Command_lint,
+	"json2latex":  Command_json2latex,
+	"heading":     Command_heading,
+	"copy-images": Command_copyImages,
 }
 
 func Commmand_md2json(args []string) error {
@@ -55,10 +54,10 @@ func Commmand_md2json(args []string) error {
 
 func Command_planarize(args []string) error {
 	if len(args) < 2 {
-		return errors.New(fmt.Sprintf("usage: planarize input_dir|input_foliant output_dir|output_foliant"))
+		return errors.New(fmt.Sprintf("usage: planarize input_dir|input_mkdocs output_dir|output_mkdocs"))
 	}
 	if strings.HasSuffix(args[0], ".yml") {
-		return PlanarizeFoliant(args[0], args[1])
+		return PlanarizeMkdocs(args[0], args[1])
 	}
 	return PlanarizeDirectory(args[0], args[1])
 }
@@ -75,13 +74,6 @@ func Command_snippets(args []string) error {
 		return errors.New(fmt.Sprintf("usage: snippets dir"))
 	}
 	return CopySnippets(args[0])
-}
-
-func Commmand_foliant2mkdocs(args []string) error {
-	if len(args) < 2 {
-		return errors.New(fmt.Sprintf("usage: foliant2mkdocs input_dir output_dir"))
-	}
-	return Foliant2Mkdocs(args[0], args[1])
 }
 
 func Command_json2md(args []string) error {
