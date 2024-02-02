@@ -566,6 +566,9 @@ func parseList(st *ParserState, node *Node) bool {
 			nestedDoc := MarkdownParse(nested.Bytes())
 			li.Children = append(li.Children, nestedDoc.Children...)
 		}
+		if st.startsWith("\n") {
+			st.consumeLine()
+		}
 		n1.Children = append(n1.Children, li)
 	}
 	node.Children = append(node.Children, n1)

@@ -35,8 +35,16 @@
               ]
             },
             {
-              "type": "CodeFence",
-              "text": "apt-cache show watcher=20.06 | egrep 'Depends|Suggests:'\n"
+              "type": "Admonition",
+              "children": [
+                {
+                  "type": "Text",
+                  "text": "admonition warning"
+                }
+              ],
+              "attributes": {
+                "level": "warning"
+              }
             }
           ]
         }

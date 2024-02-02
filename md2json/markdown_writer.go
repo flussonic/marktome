@@ -239,6 +239,9 @@ func writeList(n *Node) []byte {
 		if !ordered {
 			j = -1
 		}
+		if i > 0 && n.Children[i-1].Children != nil && len(n.Children[i-1].Children) > 1 {
+			text.WriteString("\n")
+		}
 		text.Write(writeListItem(j, &ch))
 	}
 	return text.Bytes()
@@ -263,7 +266,11 @@ func writeListItem(i int, n *Node) []byte {
 	for _, ch := range n.Children[1:] {
 		nested.Write(writeNode(&ch))
 	}
-	rows := bytes.Split(nested.Bytes(), []byte("\n"))
+	nestedBytes := nested.Bytes()
+	if nestedBytes[len(nestedBytes)-1] == '\n' {
+		nestedBytes = nestedBytes[:len(nestedBytes)-1]
+	}
+	rows := bytes.Split(nestedBytes, []byte("\n"))
 	for _, r := range rows {
 		text.WriteString("    ")
 		text.Write(r)
