@@ -116,12 +116,7 @@ func Command_macros(args []string) error {
 	if len(args) < 2 {
 		return errors.New(fmt.Sprintf("usage: macros foliant.yml dir"))
 	}
-	rootDir := args[1]
-	macros, err := FoliantMacros(args[0])
-	if err != nil {
-		return err
-	}
-	return SubstituteMacros(rootDir, macros)
+	return SubstituteMacrosFromFile(args[0], args[1])
 }
 
 func Command_graphviz(args []string) error {

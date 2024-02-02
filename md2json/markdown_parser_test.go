@@ -33,7 +33,7 @@ func TestMarkdownParse(t *testing.T) {
 		}
 		return nil
 	}
-	filepath.WalkDir("testdata", visit)
+	filepath.WalkDir("testdata/parser", visit)
 
 	for _, tt := range tests {
 

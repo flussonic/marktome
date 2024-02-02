@@ -37,26 +37,45 @@ func replaceMacros(src []byte, macros map[string]string, fp string) ([]byte, boo
 	return output.Bytes(), dirty, nil
 }
 
-func SubstituteMacros(rootDir string, macros map[string]string) error {
+func SubstituteMacrosFromFile(macrosPath string, rootDir string) error {
+	macros := make(map[string]string)
+
+	macrosFile, err := YamlParse(macrosPath)
+	if err != nil {
+		return err
+	}
+	macrosInFile, _ := macrosFile["macros"]
+	for k, v := range macrosInFile.(map[string]interface{}) {
+		macros[k] = v.(string)
+	}
+	return SubstituteMacros(macros, rootDir)
+}
+
+func SubstituteMacros(macros map[string]string, rootDir string) error {
 
 	paths := ListAllMd(rootDir)
 	for _, fp := range paths {
-		doc, err := os.ReadFile(fp)
-		var dirty bool
-		var doc2 []byte
-		if err != nil {
-			return err
-		}
-		doc2, dirty, err = replaceMacros(doc, macros, fp)
-		if err != nil {
-			return err
-		}
-		if dirty {
-			err = os.WriteFile(fp, doc2, os.ModePerm)
-		}
+		err := SubstituteMacrosPath(macros, fp)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func SubstituteMacrosPath(macros map[string]string, fp string) error {
+	doc, err := os.ReadFile(fp)
+	var dirty bool
+	var doc2 []byte
+	if err != nil {
+		return err
+	}
+	doc2, dirty, err = replaceMacros(doc, macros, fp)
+	if err != nil {
+		return err
+	}
+	if dirty {
+		err = os.WriteFile(fp, doc2, os.ModePerm)
+	}
+	return err
 }

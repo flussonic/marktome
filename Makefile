@@ -13,7 +13,7 @@ all:
 	go build
 	rm -rf stage*
 	# docker build -t latex -f Dockerfile.pandoc .
-	cp -r ../erlydoc/src stage-input
+	../erlydoc/f2/split-sources.sh ../erlydoc/src stage-input
 	mkdir -p stage-planar/img stage-out/en/doc stage-out/ru/doc cache
 	cp ../erlydoc/f2/*.yml stage-input/
 
@@ -21,7 +21,6 @@ all:
 	cp -r ../erlydoc/f2/overrides stage-out/ru/overrides
 
 	cp -r ../erlydoc/assets/* stage-planar/img
-	cp -r ../erlydoc/images stage-planar/img/auto
 	cp -r ../erlydoc/f2/template/flussonic.png stage-planar/img/
 
 	cp ../erlydoc/f2/pdf/* stage-out/en/doc/
