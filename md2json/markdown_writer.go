@@ -262,6 +262,7 @@ func writeListItem(i int, n *Node) []byte {
 	if len(n.Children) == 1 {
 		return text.Bytes()
 	}
+	text.WriteString("\n")
 	var nested bytes.Buffer
 	for _, ch := range n.Children[1:] {
 		nested.Write(writeNode(&ch))
