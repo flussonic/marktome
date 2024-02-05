@@ -46,7 +46,8 @@ func resolveIncludes(node *yaml.Node, dir string) (*yaml.Node, error) {
 		if err != nil {
 			fmt.Printf("Failed to unmarshall %s: %v\n", path, err)
 		}
-		return f.content, err
+		return resolveIncludes(f.content, dir)
+		// return f.content, err
 	}
 	if node.Kind == yaml.SequenceNode || node.Kind == yaml.MappingNode {
 		var err error

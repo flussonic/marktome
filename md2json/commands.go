@@ -23,6 +23,19 @@ var Commands = map[string]CommandFunction{
 	"json2latex":  Command_json2latex,
 	"heading":     Command_heading,
 	"copy-images": Command_copyImages,
+	"mkdocs":      Command_mkdocs,
+}
+
+func Command_mkdocs(args []string) error {
+	if len(args) < 2 {
+		return errors.New(fmt.Sprintf("usage: mkdocs input.yml output.yml"))
+	}
+	mkdocs, err := YamlParse(args[0])
+	if err != nil {
+		return err
+	}
+	err = YamlWrite(mkdocs, args[1])
+	return err
 }
 
 func Commmand_md2json(args []string) error {
