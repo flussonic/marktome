@@ -118,10 +118,10 @@ func Command_json2md(args []string) error {
 }
 
 func Command_macros(args []string) error {
-	if len(args) < 2 {
-		return errors.New(fmt.Sprintf("usage: macros foliant.yml dir"))
+	if len(args) < 3 {
+		return errors.New(fmt.Sprintf("usage: macros foliant.yml srcDir destDir"))
 	}
-	return SubstituteMacrosFromFile(args[0], args[1])
+	return SubstituteMacrosFromFile(args[0], args[1], args[2])
 }
 
 func Command_graphviz(args []string) error {

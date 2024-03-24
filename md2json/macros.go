@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func replaceMacros(src []byte, macros map[string]string, fp string) ([]byte, bool, error) {
@@ -37,7 +39,7 @@ func replaceMacros(src []byte, macros map[string]string, fp string) ([]byte, boo
 	return output.Bytes(), dirty, nil
 }
 
-func SubstituteMacrosFromFile(macrosPath string, rootDir string) error {
+func SubstituteMacrosFromFile(macrosPath string, inDir string, outDir string) error {
 	macros := make(map[string]string)
 
 	macrosFile, err := YamlParse(macrosPath)
@@ -48,14 +50,15 @@ func SubstituteMacrosFromFile(macrosPath string, rootDir string) error {
 	for k, v := range macrosInFile.(map[string]interface{}) {
 		macros[k] = v.(string)
 	}
-	return SubstituteMacros(macros, rootDir)
+	return SubstituteMacros(macros, filepath.Clean(inDir), filepath.Clean(outDir))
 }
 
-func SubstituteMacros(macros map[string]string, rootDir string) error {
+func SubstituteMacros(macros map[string]string, inDir string, outDir string) error {
 
-	paths := ListAllMd(rootDir)
-	for _, fp := range paths {
-		err := SubstituteMacrosPath(macros, fp)
+	paths := ListAllMd(inDir)
+	for _, src := range paths {
+		dest := outDir + "/" + strings.TrimPrefix(src, inDir+"/")
+		err := SubstituteMacrosPath(macros, src, dest)
 		if err != nil {
 			return err
 		}
@@ -63,19 +66,17 @@ func SubstituteMacros(macros map[string]string, rootDir string) error {
 	return nil
 }
 
-func SubstituteMacrosPath(macros map[string]string, fp string) error {
-	doc, err := os.ReadFile(fp)
-	var dirty bool
+func SubstituteMacrosPath(macros map[string]string, src string, dest string) error {
+	doc, err := os.ReadFile(src)
 	var doc2 []byte
 	if err != nil {
 		return err
 	}
-	doc2, dirty, err = replaceMacros(doc, macros, fp)
+	doc2, _, err = replaceMacros(doc, macros, src)
 	if err != nil {
 		return err
 	}
-	if dirty {
-		err = os.WriteFile(fp, doc2, os.ModePerm)
-	}
+	os.MkdirAll(filepath.Dir(dest), os.ModePerm)
+	err = os.WriteFile(dest, doc2, os.ModePerm)
 	return err
 }
