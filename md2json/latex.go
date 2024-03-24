@@ -106,7 +106,7 @@ func writeTexLink(n *Node) []byte {
 	if strings.HasPrefix(src, "http") || !hasAnchor || len(anchor) == 0 {
 		return []byte(fmt.Sprintf(`\href{%s}{%s}`, src, escapeTexText(n.Literal)))
 	} else {
-		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, labelTex(anchor), escapeTexText(n.Literal)))
+		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, escapeTexText(anchor), escapeTexText(n.Literal)))
 	}
 }
 
@@ -213,7 +213,7 @@ func writeTexCode(n *Node) []byte {
 			lang = lang1
 		}
 	}
-	text.WriteString("\\mintinline{" + lang + "}")
+	text.WriteString("\\inlineCode{" + lang + "}")
 	bracket := "|"
 	if strings.Index(n.Literal, "|") >= 0 && strings.Index(n.Literal, "$") < 0 {
 		bracket = "$"
@@ -226,26 +226,9 @@ func writeTexCode(n *Node) []byte {
 
 func writeTexCodeFence(n *Node) []byte {
 	var text bytes.Buffer
-
-	// \begin{codesnippet}
-	// text.WriteString(`\begin{minted}[frame=single,breaklines]`)
-	// lang := "c"
-	// if n.Attributes != nil {
-	// 	lang1, ok := n.Attributes["lang"]
-	// 	if ok {
-	// 		lang = lang1
-	// 	}
-	// }
-	// text.WriteString(fmt.Sprintf("{%s}", lang))
-	// text.WriteString("\n")
-	text.WriteString("\\begin{codeFence}\n")
+	text.WriteString("\\begin{multilineCode}\n")
 	text.WriteString(n.Literal)
-	text.WriteString("\\end{codeFence}\n")
-	// text.WriteString("\\end{minted}\n\n")
-	// это можно добавить для подписи
-	// \caption{My func}\label{lst:my_func}
-	// \end{codesnippet}
-
+	text.WriteString("\\end{multilineCode}\n")
 	return text.Bytes()
 }
 
