@@ -1,0 +1,18 @@
+{
+  "type": "Document",
+  "children": [
+    {
+      "type": "Paragraph",
+      "children": [
+        {
+          "type": "Text",
+          "text": "To watch the stream, open this address in the browser:"
+        }
+      ]
+    },
+    {
+      "type": "CodeFence",
+      "text": "http://FLUSSONIC-IP:80/mylive/bunny/embed.html\n"
+    }
+  ]
+}

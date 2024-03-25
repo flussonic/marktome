@@ -106,7 +106,7 @@ func writeTexLink(n *Node) []byte {
 	if strings.HasPrefix(src, "http") || !hasAnchor || len(anchor) == 0 {
 		return []byte(fmt.Sprintf(`\href{%s}{%s}`, src, escapeTexText(n.Literal)))
 	} else {
-		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, escapeTexText(anchor), escapeTexText(n.Literal)))
+		return []byte(fmt.Sprintf(`\hyperref[%s]{%s}`, escapeTexText(labelTex(anchor)), escapeTexText(n.Literal)))
 	}
 }
 

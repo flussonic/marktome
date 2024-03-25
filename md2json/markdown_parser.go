@@ -311,7 +311,7 @@ func (st *InlineParserState) parseImage() {
 
 func parseParagraph(st *ParserState, node *Node) bool {
 	s1 := st.source
-	for !st.eof() && !st.startsWith("\n") {
+	for !st.eof() && !st.startsWith("\n") && !st.startsWith("```") {
 		st.consumeLine()
 	}
 	l := len(s1) - len(st.source)
