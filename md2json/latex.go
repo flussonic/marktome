@@ -206,17 +206,21 @@ func escapeTex(in string) string {
 
 func writeTexCode(n *Node) []byte {
 	var text bytes.Buffer
-	lang := "c"
-	if n.Attributes != nil {
-		lang1, ok := n.Attributes["lang"]
-		if !ok {
-			lang = lang1
-		}
-	}
-	text.WriteString("\\inlineCode{" + lang + "}")
+	// lang := "c"
+	// if n.Attributes != nil {
+	// 	lang1, ok := n.Attributes["lang"]
+	// 	if !ok {
+	// 		lang = lang1
+	// 	}
+	// }
+	text.WriteString("\\inlineCode")
 	bracket := "|"
-	if strings.Index(n.Literal, "|") >= 0 && strings.Index(n.Literal, "$") < 0 {
+	if strings.Index(n.Literal, "|") < 0 {
+		bracket = "|"
+	} else if strings.Index(n.Literal, "$") < 0 {
 		bracket = "$"
+	} else if strings.Index(n.Literal, "^") < 0 {
+		bracket = "^"
 	}
 	text.WriteString(bracket)
 	text.WriteString(n.Literal)
